@@ -1,0 +1,26 @@
+{
+  "service": "api",
+  "replicas": 3,
+  "timeout": 30,
+  "allowed_ips": ["10.0.0.0/8", "192.168.0.0/16"],
+  "steps": [
+    {"name": "build", "cmd": "make build"},
+    {"name": "test", "cmd": "make test"},
+    {"name": "deploy", "cmd": "./deploy.sh"}
+  ],
+  "overrides": {
+    "ci": {
+      "replicas": 1,
+      "timeout": 10,
+      "steps": [
+        {"name": "build", "cmd": "make build"},
+        {"name": "test", "cmd": "make test"}
+      ]
+    },
+    "prod": {
+      "replicas": 5,
+      "allowed_ips": ["203.0.113.0/24"]
+    }
+  }
+}
+

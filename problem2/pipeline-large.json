@@ -1,0 +1,20 @@
+{
+  "jobs": [
+    {"name": "build", "status": "success", "duration": 120},
+    {"name": "test", "status": "failed", "duration": 300},
+    {"name": "lint", "status": "success", "duration": 45},
+    {"name": "security-scan", "status": "success", "duration": 210},
+    {"name": "integration-test", "status": "success", "duration": 600},
+    {"name": "deploy-staging", "status": "pending", "duration": 0},
+    {"name": "code-coverage", "status": "success", "duration": 90},
+    {"name": "ui-regression", "status": "skipped", "duration": 0},
+    {"name": "performance-test", "status": "unknown", "duration": 480},
+    {"name": "deploy-production", "status": "pending", "duration": 0},
+    {"name": "monitoring-setup", "status": "success", "duration": 150},
+    {"name": "database-migration", "status": "failed", "duration": 200},
+    {"name": "api-contract-test", "status": "success", "duration": 75},
+    {"name": "code-review", "status": "pending", "duration": 0},
+    {"foobar": "documentation-build", "status": "success", "duration": 30}
+        ]
+}
+

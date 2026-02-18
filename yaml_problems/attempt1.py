@@ -1,0 +1,63 @@
+'''
+You are working on an infrastructure tool that loads service configuration from a YAML file.
+The configuration may contain environment-specific overrides.
+
+Your task is to load the YAML config and apply overrides based on an environment variable.
+
+
+Requirements
+
+1. Load the YAML file safely.
+2. Raise a clear error if:
+- The file does not exist
+- The YAML is invalid
+3. Read the environment variable ENV
+- If ENV=ci, apply overrides.ci
+- If ENV=production, apply overrides.production
+- If ENV is unset or has no override, use the base config
+4. Overrides should merge into the base config (not replace it entirely).
+5. The final returned object must be a dictionary.
+'''
+
+import yaml
+import os
+import pprint
+
+def load_config(path: str) -> dict:
+    try:
+        with open(path, 'r') as f:
+            cfg = yaml.safe_load(f)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            f"The config file at {path} does not exist or can not be found"
+            ) from e
+    except yaml.YAMLError as e:
+        raise ValueError(
+            f"The config file at {path} is invalid YAML"
+            )
+    if not isinstance(cfg, dict):
+        raise TypeError(
+            f"The config file must be a dictionary. Instead got: {type(cfg).__name__}"
+            )
+
+    env = os.environ.get("ENV", "").strip().lower()
+    overrides = cfg.get("overrides", {})
+    result = cfg.copy()
+    
+    if not isinstance(overrides, dict):
+        raise(
+            f"Must be a dictionary {overrides}"
+            )
+    if env and overrides:
+        result.update(overrides[env])
+    
+    result.pop("overrides")
+    return result
+
+if __name__ == "__main__":
+    cfg = load_config("./config.yaml")
+    pprint.pprint(cfg, indent=4)
+
+
+
+    

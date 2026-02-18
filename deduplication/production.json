@@ -1,0 +1,6 @@
+{
+    "auth-service": "v2.0.5",
+    "payment-gateway": "v1.4.2",
+    "frontend-app": "v5.1.9",
+    "database-proxy": "v1.0.0"
+}

@@ -1,0 +1,15 @@
+{
+    "host": "localhost",
+    "port": 8080,
+    "debug": true,
+    "overrides": {
+        "dev": {
+            "log_level": "debug"
+        },
+        "prod": {
+            "debug": false,
+            "log_level": "error",
+            "host": "api.company.com"
+        }
+    }
+}

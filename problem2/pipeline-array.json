@@ -1,0 +1,9 @@
+[
+  {
+  "jobs": [
+    {"name": "build", "status": "success", "duration": 120},
+    {"name": "test", "status": "failed", "duration": 300},
+    {"name": "lint", "status": "success", "duration": 45}
+  ]
+}
+]

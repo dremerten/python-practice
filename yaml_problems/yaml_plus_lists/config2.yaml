@@ -1,0 +1,33 @@
+service: api
+replicas: 3
+timeout: 30
+
+steps:
+  - name: build
+    cmd: make build
+  - name: test
+    cmd: make test
+  - name: deploy
+    cmd: ./deploy.sh
+
+overrides:
+  ci:
+    replicas: 1
+    timeout: 10
+    steps:
+      - name: build
+        cmd: make build
+      - name: test
+        cmd: make test
+
+  prod:
+    replicas: 5
+    steps:
+      - name: build
+        cmd: make build
+      - name: test
+        cmd: make test
+      - name: deploy
+        cmd: ./deploy.sh
+      - name: smoke
+        cmd: ./smoke_test.sh

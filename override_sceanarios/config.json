@@ -1,0 +1,14 @@
+{
+    "service": "api",
+    "replicas": 3,
+    "timeout": 30,
+    "overrides": {
+        "ci": {
+            "replicas": 1,
+            "timeout": 10
+        },
+        "prod": {
+            "replicas": 5
+        }
+    }
+}

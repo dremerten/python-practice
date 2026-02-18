@@ -1,0 +1,12 @@
+service: api
+replicas: 3
+debug: false
+timeout: 30
+
+overrides:
+  ci:
+    replicas: 1
+    debug: true
+  production:
+    replicas: 5
+    debug: false

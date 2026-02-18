@@ -1,0 +1,17 @@
+service: api
+replicas: 3
+debug: false
+timeout: 30
+tag: QA
+
+overrides:
+  ci:
+    replicas: 1
+    debug: true
+    timeout: 10
+    tag: ci-v6.0.0
+  production:
+    replicas: 5
+    debug: false
+    timeout: 60
+    tag: prod-v5.14.2

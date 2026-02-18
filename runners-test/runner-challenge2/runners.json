@@ -1,0 +1,37 @@
+{
+    "runners": [
+        {
+            "name": "runner-1",
+            "online": true,
+            "disk_gb": 50,
+            "tags": [
+                "linux",
+                "docker"
+            ]
+        },
+        {
+            "name": "runner-2",
+            "online": false,
+            "disk_gb": 80,
+            "tags": [
+                "linux"
+            ]
+        },
+        {
+            "name": "runner-3",
+            "online": true,
+            "disk_gb": 5,
+            "tags": [
+                "docker"
+            ]
+        }
+    ],
+    "overrides": {
+        "ci": {
+            "min_disk_gb": 10
+        },
+        "prod": {
+            "min_disk_gb": 50
+        }
+    }
+}

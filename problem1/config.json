@@ -1,0 +1,5 @@
+{
+  "service": "api",
+  "replicas": 3,
+  "features": { "debug": false }
+}

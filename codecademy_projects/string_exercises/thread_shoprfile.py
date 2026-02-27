@@ -31,6 +31,9 @@ def read_sales(path: str):
                 else:
                     thread_sold_split.append(colors)
 
+            # list comprehension version
+            #thread_sold_split = [color for colors in thread_sold for color in (colors.split("&") if "&" in colors else [colors])]
+
             # Define the color_count function outside of the loop
             def color_count(color):
                 count = 0

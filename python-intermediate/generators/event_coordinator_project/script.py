@@ -1,9 +1,6 @@
 def read_guestlist(file_name):
-  
   with open(file_name) as f:
     entries = f.read().splitlines()
-      
-
   while entries:
     line_data = entries.pop().split(',')
     name, age = line_data[0], int(line_data[1])
@@ -13,7 +10,6 @@ def read_guestlist(file_name):
       entries.append(entry)
 
 guests = {}
-
 print('Guestlist:')
 print('----------')
 guestlist = read_guestlist('guest_list.txt')

@@ -1,3 +1,4 @@
+# Generator functions
 def summa():
     yield 'Summa Cum Laude'
 def magna():

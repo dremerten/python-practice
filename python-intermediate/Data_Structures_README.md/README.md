@@ -1,311 +1,365 @@
 # Python Data Structures — One Page Cheat Sheet
 
-==================================================
-1. LIST
-==================================================
+---
+
+# 1. LIST
 Ordered, mutable collection that allows duplicates.
 
-Example:
-nums = [1, 2, 3]
+### Example
+```python
+nums = [1, 2, 3]        # create list
 
-nums.append(4)
-nums.insert(1, 10)
-nums.remove(2)
-nums.pop()
-nums.pop(0)
+nums.append(4)          # add element to end
+nums.insert(1, 10)      # insert element at index
 
-len(nums)
-sorted(nums)
-sum(nums)
-min(nums)
-max(nums)
+nums.remove(2)          # remove first occurrence of value
+nums.pop()              # remove last element
+nums.pop(0)             # remove element at index
 
-List comprehension:
-squares = [x**2 for x in range(10)]
+nums[0]                 # access element by index
+nums[-1]                # access last element
 
-Use when:
-- order matters
-- indexing is needed
+len(nums)               # number of elements
+sorted(nums)            # return sorted copy
+sum(nums)               # sum numeric values
+min(nums)               # smallest value
+max(nums)               # largest value
+
+for n in nums:          # iterate through list
+    print(n)
+```
+
+### List Comprehension
+```python
+squares = [x**2 for x in range(10)]  # create list using expression and loop
+```
+
+### Use When
+- order matters  
+- indexing is needed  
 - general purpose storage
 
+---
 
-==================================================
-2. TUPLE
-==================================================
+# 2. TUPLE
 Ordered, immutable collection.
 
-Example:
-coords = (10, 20)
+### Example
+```python
+coords = (10, 20)      # create tuple
 
-x = coords[0]
+coords[0]              # access value by index
+coords[-1]             # access last value
 
-Returning multiple values:
+x, y = coords          # unpack tuple values into variables
+
 def get_user():
-    return ("Alice", 30)
+    return ("Alice", 30)   # returning multiple values as tuple
 
-name, age = get_user()
+name, age = get_user()     # unpack returned tuple
+```
 
-Use when:
-- fixed data
-- dictionary keys
-- safe read-only values
+### Use When
+- fixed data  
+- dictionary keys  
+- safe read-only values  
 
+---
 
-==================================================
-3. DICTIONARY
-==================================================
+# 3. DICTIONARY
 Key → Value mapping with fast lookups.
 
-Example:
+### Example
+```python
 user = {
     "name": "Alice",
     "age": 30
-}
+}                         # create dictionary
 
-Access:
-user["name"]
-user.get("age")
+user["name"]              # access value by key (raises error if missing)
+user.get("age")           # safe access method (returns None if missing)
 
-Modify:
-user["age"] = 31
-user["city"] = "NY"
+user["age"] = 31          # update existing key
+user["city"] = "NY"       # add new key/value pair
 
-Delete:
-del user["age"]
+del user["age"]           # delete key/value pair
 
-Iteration:
-for key, value in user.items():
+"name" in user            # check if key exists
+
+len(user)                 # number of key/value pairs
+
+for key, value in user.items():   # iterate over key/value pairs
     print(key, value)
+```
 
-Use when:
-- structured data
-- configuration
-- JSON-like objects
+### Use When
+- structured data  
+- configuration  
+- JSON-like objects  
 
+---
 
-==================================================
-4. ORDEREDDICT
-==================================================
+# 4. ORDEREDDICT
 Dictionary that **preserves insertion order explicitly**.
 
-Note:
-Python 3.7+ dict already preserves order, but OrderedDict
-still provides additional order-related methods.
+> Python 3.7+ dict already preserves order, but `OrderedDict` provides order manipulation utilities.
 
-Example:
+### Example
+```python
 from collections import OrderedDict
 
-od = OrderedDict()
+od = OrderedDict()      # create ordered dictionary
 
-od["first"] = 1
+od["first"] = 1         # insert key/value
 od["second"] = 2
 od["third"] = 3
 
-for k, v in od.items():
+od["first"]             # access value by key
+
+od["first"] = 10        # update value
+
+od.move_to_end("first") # move key to end (change order)
+
+od.popitem()            # remove last inserted key/value
+
+for k, v in od.items(): # iterate through dictionary
     print(k, v)
+```
 
-Move element:
-od.move_to_end("first")
+### Use When
+- strict order control  
+- LRU caches  
+- order manipulation  
 
-Remove last inserted item:
-od.popitem()
+---
 
-Use when:
-- strict order control
-- LRU caches
-- order manipulation
-
-
-==================================================
-5. SET
-==================================================
+# 5. SET
 Unordered collection of unique values.
 
-Example:
-nums = {1, 2, 3, 3}
+### Example
+```python
+nums = {1, 2, 3, 3}    # create set (duplicates automatically removed)
 
-nums.add(4)
-nums.remove(2)
+nums.add(4)            # add element
+nums.remove(2)         # remove element (raises error if missing)
 
-Membership test:
-3 in nums
+nums.discard(10)       # remove element safely (no error if missing)
 
---------------------------------------------------
-SET OPERATIONS
---------------------------------------------------
+3 in nums              # membership test
 
-Create sets:
-a = {1,2,3}
+len(nums)              # number of elements
+
+for n in nums:         # iterate through set
+    print(n)
+```
+
+---
+
+# SET OPERATIONS
+
+### Create Sets
+```python
+a = {1,2,3}            # create set
 b = {3,4,5}
+```
 
-Union (all elements)
-a.union(b)
-a | b
+### Union (all elements)
+```python
+a.union(b)             # combine sets
+a | b                  # union operator
+```
 
-Result:
-{1,2,3,4,5}
-
-Intersection (common elements)
-a.intersection(b)
+### Intersection (common elements)
+```python
+a.intersection(b)      # elements present in both sets
 a & b
+```
 
-Result:
-{3}
-
-Difference (in a but not b)
-a.difference(b)
+### Difference (in a but not b)
+```python
+a.difference(b)        # elements only in a
 a - b
+```
 
-Result:
-{1,2}
-
-Symmetric Difference (in one set but not both)
-a.symmetric_difference(b)
+### Symmetric Difference
+```python
+a.symmetric_difference(b)  # elements not shared
 a ^ b
+```
 
-Result:
-{1,2,4,5}
-
-Subset (all elements contained in another set)
+### Subset
+```python
 a = {1,2}
 b = {1,2,3}
 
-a.issubset(b)
+a.issubset(b)          # check if a is subset of b
 a <= b
+```
 
-Proper Subset
-a < b
+### Proper Subset
+```python
+a < b                  # subset but not equal
+```
 
-Superset
-b.issuperset(a)
+### Superset
+```python
+b.issuperset(a)        # check if b contains a
 b >= a
+```
 
-Proper Superset
+### Proper Superset
+```python
 b > a
+```
 
-Disjoint (no shared elements)
+### Disjoint
+```python
 a = {1,2}
 b = {3,4}
 
-a.isdisjoint(b)
+a.isdisjoint(b)        # check if sets share no elements
+```
 
---------------------------------------------------
-SET MODIFICATION
---------------------------------------------------
+---
 
-Add element
-s.add(4)
+# SET MODIFICATION
 
-Remove element (raises error if missing)
-s.remove(2)
+```python
+s = {1,2,3}
 
-Remove element safely
-s.discard(5)
+s.add(4)               # add element
+s.remove(2)            # remove element (error if missing)
+s.discard(5)           # remove safely
+s.pop()                # remove random element
+s.clear()              # remove all elements
+```
 
-Pop random element
-s.pop()
+---
 
-Clear set
-s.clear()
+# 6. DEQUE
+Double-ended queue from `collections`.
 
-
-==================================================
-6. DEQUE
-==================================================
-Double-ended queue from collections.
-
-Example:
+### Example
+```python
 from collections import deque
 
-q = deque([1,2,3])
+q = deque([1,2,3])     # create deque
 
-q.append(4)
-q.appendleft(0)
+q.append(4)            # add element to right side
+q.appendleft(0)        # add element to left side
 
-q.pop()
-q.popleft()
+q.pop()                # remove element from right side
+q.popleft()            # remove element from left side
 
-Use when:
-- queue
-- stack
-- BFS algorithms
-- sliding window problems
+q[0]                   # access element by index
 
+len(q)                 # number of elements
 
-==================================================
-7. HEAP (PRIORITY QUEUE)
-==================================================
+for item in q:         # iterate through deque
+    print(item)
+```
+
+### Use When
+- queue  
+- stack  
+- BFS algorithms  
+- sliding window problems  
+
+---
+
+# 7. HEAP (PRIORITY QUEUE)
+
 Smallest element always accessible.
 
-Example:
+### Example
+```python
 import heapq
 
-nums = [5,2,8,1]
+nums = [5,2,8,1]       # create list
 
-heapq.heapify(nums)
+heapq.heapify(nums)    # convert list to heap structure
 
-heapq.heappush(nums, 3)
-heapq.heappop(nums)
+heapq.heappush(nums, 3)  # insert element
 
-Use when:
-- priority scheduling
-- task ordering
-- retrieving smallest values quickly
+smallest = heapq.heappop(nums)  # remove smallest element
 
+nums[0]                # access smallest element without removing
+```
 
-==================================================
-8. COUNTER
-==================================================
+### Use When
+- priority scheduling  
+- task ordering  
+- retrieving smallest values quickly  
+
+---
+
+# 8. COUNTER
+
 Counts frequency of elements.
 
-Example:
+### Example
+```python
 from collections import Counter
 
 data = ["a","b","a","c","a"]
 
-counts = Counter(data)
+counts = Counter(data)      # create counter
 
-counts["a"]
-counts.most_common(1)
+counts["a"]                 # access frequency of element
 
-Use when:
-- counting items
-- frequency analysis
-- log analysis
+counts["b"] += 1            # manually update count
 
+counts.most_common(1)       # get most common element
 
-==================================================
-9. DEFAULTDICT
-==================================================
+for item, count in counts.items():  # iterate through counts
+    print(item, count)
+```
+
+### Use When
+- counting items  
+- frequency analysis  
+- log analysis  
+
+---
+
+# 9. DEFAULTDICT
+
 Dictionary that auto-creates missing keys.
 
-Example:
+### Example
+```python
 from collections import defaultdict
 
-d = defaultdict(list)
+d = defaultdict(list)   # create defaultdict with list as default
 
-d["a"].append(1)
+d["a"].append(1)        # key auto-created with empty list
 d["a"].append(2)
 
-Result:
-{'a': [1, 2]}
+d["a"]                  # access value
 
-Use when:
-- grouping data
-- building adjacency lists
-- avoiding KeyError
+len(d)                  # number of keys
 
+for key, value in d.items():  # iterate through dictionary
+    print(key, value)
+```
 
-==================================================
-TLDR (MUST MEMORIZE)
-==================================================
+### Use When
+- grouping data  
+- building adjacency lists  
+- avoiding KeyError  
 
-list        -> ordered mutable collection
-tuple       -> ordered immutable collection
-dict        -> key/value mapping
-OrderedDict -> ordered dictionary with order control
-set         -> unique values + set operations
-deque       -> fast queue operations
-heapq       -> priority queue
-Counter     -> frequency counter
-defaultdict -> dictionary with automatic initialization
+---
+
+# TLDR (MUST MEMORIZE)
+
+| Structure | Purpose |
+|-----------|--------|
+| `list` | ordered mutable collection |
+| `tuple` | ordered immutable collection |
+| `dict` | key/value mapping |
+| `OrderedDict` | ordered dictionary with order control |
+| `set` | unique values + set operations |
+| `deque` | fast queue operations |
+| `heapq` | priority queue |
+| `Counter` | frequency counter |
+| `defaultdict` | dictionary with automatic initialization |

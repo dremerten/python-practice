@@ -6,7 +6,7 @@ Tree = namedtuple("Tree", ["index", "width", "height", "volume"])
 
 with open("trees.csv", newline="") as csvfile:
     reader = csv.DictReader(csvfile, skipinitialspace=True)
-
+    breakpoint()
     # Store all Tree objects inside a tuple using a comprehension.
     trees = tuple(
         Tree(

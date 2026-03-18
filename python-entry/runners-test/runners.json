@@ -1,0 +1,845 @@
+{
+  "runners": [
+    {
+      "name": "runner-1",
+      "online": true,
+      "disk_gb": 77,
+      "tags": [
+        "windows",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-2",
+      "online": true,
+      "disk_gb": 16,
+      "tags": [
+        "k8s",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-3",
+      "online": false,
+      "disk_gb": 21,
+      "tags": [
+        "windows",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-4",
+      "online": true,
+      "disk_gb": 7,
+      "tags": []
+    },
+    {
+      "name": "runner-5",
+      "online": false,
+      "disk_gb": 44,
+      "tags": [
+        "docker",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-6",
+      "online": true,
+      "disk_gb": 89,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-7",
+      "online": true,
+      "disk_gb": 19,
+      "tags": []
+    },
+    {
+      "name": "runner-8",
+      "online": false,
+      "disk_gb": 3,
+      "tags": [
+        "linux",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-9",
+      "online": true,
+      "disk_gb": 46,
+      "tags": [
+        "windows",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-10",
+      "online": true,
+      "disk_gb": 73,
+      "tags": []
+    },
+    {
+      "name": "runner-11",
+      "online": true,
+      "disk_gb": 40,
+      "tags": [
+        "k8s",
+        "linux",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-12",
+      "online": true,
+      "disk_gb": 61,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-13",
+      "online": true,
+      "disk_gb": 68,
+      "tags": [
+        "docker",
+        "gpu",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-14",
+      "online": true,
+      "disk_gb": 27,
+      "tags": [
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-15",
+      "online": false,
+      "disk_gb": 77,
+      "tags": [
+        "linux",
+        "windows",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-16",
+      "online": false,
+      "disk_gb": 31,
+      "tags": [
+        "k8s",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-17",
+      "online": true,
+      "disk_gb": 71,
+      "tags": []
+    },
+    {
+      "name": "runner-18",
+      "online": true,
+      "disk_gb": 86,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-19",
+      "online": true,
+      "disk_gb": 74,
+      "tags": []
+    },
+    {
+      "name": "runner-20",
+      "online": false,
+      "disk_gb": 64,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-21",
+      "online": true,
+      "disk_gb": 29,
+      "tags": [
+        "docker",
+        "k8s",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-22",
+      "online": true,
+      "disk_gb": 2,
+      "tags": [
+        "k8s",
+        "arm",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-23",
+      "online": false,
+      "disk_gb": 26,
+      "tags": [
+        "linux",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-24",
+      "online": false,
+      "disk_gb": 90,
+      "tags": [
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-25",
+      "online": true,
+      "disk_gb": 7,
+      "tags": [
+        "docker",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-26",
+      "online": true,
+      "disk_gb": 80,
+      "tags": [
+        "docker",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-27",
+      "online": false,
+      "disk_gb": 31,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-28",
+      "online": true,
+      "disk_gb": 34,
+      "tags": [
+        "linux",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-29",
+      "online": true,
+      "disk_gb": 68,
+      "tags": [
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-30",
+      "online": true,
+      "disk_gb": 21,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-31",
+      "online": false,
+      "disk_gb": 81,
+      "tags": [
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-32",
+      "online": true,
+      "disk_gb": 16,
+      "tags": [
+        "linux",
+        "arm",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-33",
+      "online": true,
+      "disk_gb": 10,
+      "tags": [
+        "docker",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-34",
+      "online": true,
+      "disk_gb": 6,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-35",
+      "online": false,
+      "disk_gb": 98,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-36",
+      "online": false,
+      "disk_gb": 99,
+      "tags": [
+        "windows",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-37",
+      "online": false,
+      "disk_gb": 23,
+      "tags": [
+        "windows",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-38",
+      "online": true,
+      "disk_gb": 27,
+      "tags": [
+        "linux",
+        "arm",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-39",
+      "online": true,
+      "disk_gb": 69,
+      "tags": [
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-40",
+      "online": true,
+      "disk_gb": 93,
+      "tags": [
+        "gpu",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-41",
+      "online": true,
+      "disk_gb": 75,
+      "tags": []
+    },
+    {
+      "name": "runner-42",
+      "online": false,
+      "disk_gb": 19,
+      "tags": []
+    },
+    {
+      "name": "runner-43",
+      "online": false,
+      "disk_gb": 85,
+      "tags": [
+        "docker",
+        "windows",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-44",
+      "online": false,
+      "disk_gb": 27,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-45",
+      "online": false,
+      "disk_gb": 18,
+      "tags": [
+        "arm",
+        "linux",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-46",
+      "online": true,
+      "disk_gb": 83,
+      "tags": []
+    },
+    {
+      "name": "runner-47",
+      "online": false,
+      "disk_gb": 70,
+      "tags": [
+        "windows",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-48",
+      "online": false,
+      "disk_gb": 60,
+      "tags": []
+    },
+    {
+      "name": "runner-49",
+      "online": true,
+      "disk_gb": 35,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-50",
+      "online": false,
+      "disk_gb": 60,
+      "tags": [
+        "windows",
+        "linux",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-51",
+      "online": false,
+      "disk_gb": 39,
+      "tags": []
+    },
+    {
+      "name": "runner-52",
+      "online": false,
+      "disk_gb": 92,
+      "tags": [
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-53",
+      "online": true,
+      "disk_gb": 41,
+      "tags": []
+    },
+    {
+      "name": "runner-54",
+      "online": true,
+      "disk_gb": 22,
+      "tags": [
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-55",
+      "online": false,
+      "disk_gb": 2,
+      "tags": [
+        "linux",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-56",
+      "online": true,
+      "disk_gb": 12,
+      "tags": []
+    },
+    {
+      "name": "runner-57",
+      "online": true,
+      "disk_gb": 92,
+      "tags": [
+        "windows",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-58",
+      "online": true,
+      "disk_gb": 3,
+      "tags": [
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-59",
+      "online": false,
+      "disk_gb": 35,
+      "tags": [
+        "gpu",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-60",
+      "online": true,
+      "disk_gb": 40,
+      "tags": [
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-61",
+      "online": false,
+      "disk_gb": 68,
+      "tags": []
+    },
+    {
+      "name": "runner-62",
+      "online": true,
+      "disk_gb": 48,
+      "tags": []
+    },
+    {
+      "name": "runner-63",
+      "online": true,
+      "disk_gb": 1,
+      "tags": [
+        "k8s",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-64",
+      "online": false,
+      "disk_gb": 22,
+      "tags": [
+        "docker",
+        "arm",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-65",
+      "online": true,
+      "disk_gb": 98,
+      "tags": [
+        "gpu",
+        "k8s",
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-66",
+      "online": false,
+      "disk_gb": 7,
+      "tags": [
+        "k8s",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-67",
+      "online": true,
+      "disk_gb": 45,
+      "tags": [
+        "docker",
+        "gpu",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-68",
+      "online": true,
+      "disk_gb": 75,
+      "tags": [
+        "k8s",
+        "linux",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-69",
+      "online": true,
+      "disk_gb": 40,
+      "tags": [
+        "linux",
+        "docker",
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-70",
+      "online": false,
+      "disk_gb": 91,
+      "tags": [
+        "gpu",
+        "windows",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-71",
+      "online": false,
+      "disk_gb": 36,
+      "tags": [
+        "windows",
+        "docker",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-72",
+      "online": false,
+      "disk_gb": 36,
+      "tags": [
+        "arm",
+        "linux",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-73",
+      "online": false,
+      "disk_gb": 57,
+      "tags": []
+    },
+    {
+      "name": "runner-74",
+      "online": false,
+      "disk_gb": 36,
+      "tags": []
+    },
+    {
+      "name": "runner-75",
+      "online": false,
+      "disk_gb": 20,
+      "tags": [
+        "docker",
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-76",
+      "online": false,
+      "disk_gb": 65,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-77",
+      "online": true,
+      "disk_gb": 18,
+      "tags": [
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-78",
+      "online": true,
+      "disk_gb": 51,
+      "tags": [
+        "gpu",
+        "docker",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-79",
+      "online": true,
+      "disk_gb": 93,
+      "tags": [
+        "gpu",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-80",
+      "online": true,
+      "disk_gb": 2,
+      "tags": []
+    },
+    {
+      "name": "runner-81",
+      "online": false,
+      "disk_gb": 89,
+      "tags": [
+        "gpu",
+        "k8s"
+      ]
+    },
+    {
+      "name": "runner-82",
+      "online": true,
+      "disk_gb": 53,
+      "tags": [
+        "docker",
+        "k8s",
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-83",
+      "online": false,
+      "disk_gb": 4,
+      "tags": [
+        "docker",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-84",
+      "online": false,
+      "disk_gb": 20,
+      "tags": [
+        "gpu",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-85",
+      "online": true,
+      "disk_gb": 17,
+      "tags": [
+        "docker",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-86",
+      "online": false,
+      "disk_gb": 80,
+      "tags": []
+    },
+    {
+      "name": "runner-87",
+      "online": true,
+      "disk_gb": 72,
+      "tags": [
+        "windows",
+        "k8s",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-88",
+      "online": true,
+      "disk_gb": 94,
+      "tags": [
+        "gpu",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-89",
+      "online": true,
+      "disk_gb": 100,
+      "tags": [
+        "docker",
+        "windows"
+      ]
+    },
+    {
+      "name": "runner-90",
+      "online": true,
+      "disk_gb": 92,
+      "tags": [
+        "arm",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-91",
+      "online": true,
+      "disk_gb": 65,
+      "tags": [
+        "k8s",
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-92",
+      "online": false,
+      "disk_gb": 13,
+      "tags": [
+        "windows",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-93",
+      "online": true,
+      "disk_gb": 93,
+      "tags": [
+        "k8s",
+        "arm"
+      ]
+    },
+    {
+      "name": "runner-94",
+      "online": true,
+      "disk_gb": 72,
+      "tags": [
+        "windows",
+        "docker",
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-95",
+      "online": true,
+      "disk_gb": 43,
+      "tags": [
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-96",
+      "online": true,
+      "disk_gb": 37,
+      "tags": [
+        "windows",
+        "docker"
+      ]
+    },
+    {
+      "name": "runner-97",
+      "online": true,
+      "disk_gb": 41,
+      "tags": [
+        "linux"
+      ]
+    },
+    {
+      "name": "runner-98",
+      "online": true,
+      "disk_gb": 82,
+      "tags": []
+    },
+    {
+      "name": "runner-99",
+      "online": false,
+      "disk_gb": 63,
+      "tags": [
+        "gpu"
+      ]
+    },
+    {
+      "name": "runner-100",
+      "online": true,
+      "disk_gb": 39,
+      "tags": [
+        "linux",
+        "k8s"
+      ]
+    }
+  ]
+}

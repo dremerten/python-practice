@@ -23,5 +23,5 @@ martha = assign_table(table_number=3, name="Martha", vip_status=True)
 karla = assign_table(4, "Karla")
 print(tables)
 
-result = assign_table(2, "joe", "true")
+result = assign_table(2, "joe", True)
 print(result)

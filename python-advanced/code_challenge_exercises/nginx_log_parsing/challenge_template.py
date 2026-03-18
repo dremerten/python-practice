@@ -32,80 +32,139 @@ Example:
 2) FILE HANDLING
 --------------------------------------------------------
 [ ] Open file: with open(path, "r") as f
-[ ] for line in f:
-[ ] line = line.strip()
-[ ] if empty -> continue
+[ ] For each `line` in the file:
+[ ] `line = line.strip()` (remove leading/trailing whitespace)
+[ ] If the line is empty, `continue` (skip)
 
 ========================================================
 3) SPLIT INTO FIELDS
 --------------------------------------------------------
-[ ] Split by whitespace: parts = line.split()
+[ ] Split the line by whitespace: `parts = line.split()`
 [ ] Expect exactly 6 fields:
-    0 timestamp
-    1 ip
-    2 method
-    3 path
-    4 status
-    5 latency (like "18ms")
-[ ] If len(parts) != 6 -> skip (malformed line)
+    - `0 timestamp`
+    - `1 ip`
+    - `2 method`
+    - `3 path`
+    - `4 status`
+    - `5 latency (e.g., "18ms")`
+[ ] If `len(parts) != 6`, skip the line (malformed line)
 
 ========================================================
 4) EXTRACT + BASIC VALIDATION
 --------------------------------------------------------
-[ ] timestamp = parts[0]
-[ ] ip = parts[1]
-[ ] method = parts[2]
-[ ] path = parts[3]
-[ ] status_str = parts[4]
-[ ] latency_str = parts[5]
+[ ] Extract the parts of the line:
+    - You can either unpack the values individually, e.g., `timestamp = parts[0]`, or use a more compact method to unpack them all into variables at once.
+    
+[ ] Convert `status_str` to an integer:
+    - Ensure the string is a valid number before converting.
+    - If it's not a valid number, skip the line.
 
-[ ] Convert status_str -> int safely:
-    - if not status_str.isdigit(): skip
-    - status = int(status_str)
+[ ] Parse the `latency_str`:
+    - Ensure it ends with "ms".
+    - Remove the "ms" part and convert the remaining value to an integer.
+    - If the number is invalid, skip the line.
 
-[ ] Parse latency:
-    - latency_str must end with "ms"
-    - latency_num = latency_str[:-2]
-    - if not latency_num.isdigit(): skip
-    - latency_ms = int(latency_num)
+[ ] Perform validation at each step:
+    - Only process lines that pass all checks.
 
 ========================================================
 5) UPDATE STATUS COUNTS
 --------------------------------------------------------
-[ ] status_counts[status] = status_counts.get(status, 0) + 1
+[ ] Update the count for each HTTP `status` code:
+    - Use `results["status_counts"][status] = results["status_counts"].get(status, 0) + 1` to increment the count for the status code.
 
 ========================================================
 6) UPDATE METHOD COUNTS
 --------------------------------------------------------
-[ ] method_counts[method] = method_counts.get(method, 0) + 1
+[ ] Track the HTTP `method` counts (GET/POST/etc.):
+    - Use `results["method_counts"][method] = results["method_counts"].get(method, 0) + 1` to increment the count for each method.
 
 ========================================================
 7) COUNT SLOW REQUESTS
 --------------------------------------------------------
-[ ] If latency_ms >= 250:
-    slow_requests_count += 1
+[ ] Count requests with latency greater than or equal to 250ms:
+    - If `latency_ms >= 250`, increment `results["slow_requests_count"]`.
 
 ========================================================
 8) TRACK ERRORS PER PATH
 --------------------------------------------------------
-[ ] If status is between 400 and 599 (inclusive):
-    path_error_counts[path] = path_error_counts.get(path, 0) + 1
+[ ] Track errors by `path` for HTTP status codes between 400 and 599:
+    - If `400 <= status <= 599`, increment the count for that `path` in `results["path_error_counts"]`.
 
 ========================================================
 9) FIND TOP ERROR PATH
 --------------------------------------------------------
-[ ] If path_error_counts is empty:
-    top_error_path = None
+[ ] If `results["path_error_counts"]` is empty:
+    - Set `results["top_error_path"] = None`.
 [ ] Else:
-    - highest = 0
-    - iterate path_error_counts.items()
-    - if count > highest:
-        highest = count
-        top_error_path = path
+    - Use `max()` to find the path with the highest error count:
+        - `results["top_error_path"] = max(results["path_error_counts"], key=results["path_error_counts"].get)`.
 
 ========================================================
 10) RETURN RESULTS
 --------------------------------------------------------
-[ ] return results
-[ ] Never crash on malformed lines: always skip safely
+[ ] Return the `results` dictionary, which contains:
+    - `results["method_counts"]`: A dictionary mapping HTTP methods (e.g., GET, POST) to their respective counts.
+    - `results["path_error_counts"]`: A dictionary mapping paths to their respective error counts (status codes between 400–599).
+    - `results["top_error_path"]`: The path with the highest error count, or `None` if no errors were tracked.
+    - `results["slow_requests_count"]`: The total number of requests with latency >= 250ms.
+    - `results["status_counts"]`: A dictionary mapping HTTP status codes (e.g., 200, 404) to their respective counts.
+
+[ ] Example output format:
+{
+    'method_counts': {
+        'DELETE': 395,
+        'GET': 363,
+        'POST': 353,
+        'PUT': 389
+    },
+    'path_error_counts': {
+        '/': 114,
+        '/api/v1/orders': 116,
+        '/api/v1/payments': 98,
+        '/api/v1/products': 110,
+        '/api/v1/users': 103,
+        '/health': 96,
+        '/login': 92,
+        '/logout': 92,
+        '/metrics': 104
+    },
+    'slow_requests_count': 870,
+    'status_counts': {
+        200: 100,
+        201: 125,
+        204: 109,
+        301: 141,
+        302: 100,
+        400: 141,
+        401: 106,
+        403: 104,
+        404: 116,
+        429: 129,
+        500: 102,
+        502: 124,
+        503: 103
+    },
+    'top_error_path': '/api/v1/orders'
+}
+
+[ ] Never crash on malformed lines: always skip them safely.
+
+========================================================
+EXTRA ERROR HANDLING
+--------------------------------------------------------
+[ ] Handle missing files gracefully:
+    - If the log file can't be found, raise a `FileNotFoundError` with a descriptive message.
+[ ] Handle other potential exceptions gracefully:
+    - If an unexpected error occurs, raise a generic `Exception` with a descriptive message.
+
+========================================================
+MAIN BLOCK (for testing the function)
+--------------------------------------------------------
+[ ] Add a main block to run the code and print the results using `pprint`.
+[ ] Example:
+    if __name__ == "__main__":
+        PATH = "path/to/log/file.log"
+        results = analyze_access_log(PATH)
+        pprint.pprint(results, indent=4)
 """

@@ -40,7 +40,7 @@ def load_config(path: str) -> dict:
 8. Finalize output
    - Remove the "overrides" key from the result only if an override was applied
 
-9. Return the final configuration dictionary
+9. Return the final copy of the configuration dictionary
 """
 
 import json

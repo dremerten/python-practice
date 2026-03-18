@@ -50,7 +50,7 @@ Example meta:
     - service token at index 2
     - log level token at index 3
 [ ] Strip brackets using .strip("[]")
-[ ] If service or level is empty → skip line
+[ ] If service or log level is empty → skip line
 
 ========================================================
 5) FILTER LOG LEVELS
@@ -84,23 +84,38 @@ Example meta:
 [ ] Never crash on bad input
 [ ] Skip lines that:
     - Don’t split correctly
-    - Have missing tokens
-    - Have empty service or level
+    - Have fewer than 4 meta tokens
+    - Have empty service or log level
 
 ========================================================
 9) FIND MOST COMMON ERROR MESSAGE
-
+--------------------------------------------------------
 [ ] Initialize highest_count = 0
-[ ] Iterate over results["error_messages"].items()
+[ ] Iterate over results["error_messages"].items() **after reading the file**
 [ ] For each (message, count):
     [ ] Compare count to highest_count
     [ ] If count is greater:
         [ ] Update results["most_common_error"] to this message
         [ ] Update highest_count to this count
+
 ========================================================
 10) FINALIZE AND RETURN
 --------------------------------------------------------
 [ ] Return results dictionary
+
+========================================================
+EXPECTED RETURN STRUCTURE
+--------------------------------------------------------
+{
+    "service_counts": {
+        "payments": {"ERROR": 2, "WARNING": 0},
+        "auth": {"ERROR": 0, "WARNING": 1}
+    },
+    "error_messages": {
+        "DB connection timed out": 2
+    },
+    "most_common_error": "DB connection timed out"
+}
 ========================================================
 """
 

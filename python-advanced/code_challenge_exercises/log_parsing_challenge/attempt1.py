@@ -1,101 +1,190 @@
 """
-CODE CHALLENGE: System Log Analysis (No Regex)
+SYSTEM LOG ANALYSIS — STEP-BY-STEP CHECKLIST
 
-You are given a system log file where each line follows this format:
+GOAL:
+Read a log file line by line and:
+- Count WARNING and ERROR logs per service
+- Count ERROR message frequencies across all services
+- Find the most common ERROR message (or None if no errors)
 
-    [timestamp] [service] [log_level] - [message]
-
-Example:
-    [2026-02-10 09:00:05] [api] [WARNING] - Token is about to expire
-    [2026-02-10 09:00:11] [auth] [ERROR] - Server unavailable
-
-LOG LEVELS:
-    INFO, DEBUG, WARNING, ERROR, TRACE
-
-TASK:
-
-Write a function that reads the log file and returns a dictionary
-with the following information:
-
-1. A count of log entries per log level.
-2. The most frequent WARNING message.
-3. The most frequent ERROR message.
-
-FUNCTION SIGNATURE:
-
-    def analyze_logs(path: str) -> dict:
-
-EXPECTED RETURN FORMAT:
-
+========================================================
+1) FUNCTION SCAFFOLDING
+--------------------------------------------------------
+[ ] Define function: analyze_logs(path: str) -> dict
+[ ] Initialize results dictionary with:
     {
-        "level_counts": {
-            "INFO": int,
-            "DEBUG": int,
-            "WARNING": int,
-            "ERROR": int,
-            "TRACE": int
-        },
-        "most_common_warning": str | None,
-        "most_common_error": str | None
+        "service_counts": {},
+        "error_messages": {},
+        "most_common_error": None
     }
 
-CONSTRAINTS:
+========================================================
+2) FILE HANDLING
+--------------------------------------------------------
+[ ] Open file using: with open(path, "r") as f
+[ ] Iterate line by line: for line in f
+[ ] Strip whitespace: line = line.strip()
+[ ] Skip empty lines
 
-- Use Python 3
-- Do NOT use regular expressions
-- Use basic string operations only (split, strip)
-- Read the file line by line (do not load entire file into memory)
-- Handle malformed or unexpected lines safely
+========================================================
+3) SPLIT METADATA FROM MESSAGE
+--------------------------------------------------------
+Log format:
+[timestamp] [service] [log_level] - message
 
-BONUS (OPTIONAL):
+[ ] Split line using: line.split(" - ", 1)
+[ ] If split does NOT return 2 parts → skip line
+[ ] meta = left side (strip whitespace)
+[ ] message = right side (strip whitespace)
 
-- Write clean, readable code
-- Explain your approach step by step
-- Add a simple unit test
+========================================================
+4) PARSE METADATA (NO REGEX)
+--------------------------------------------------------
+Example meta:
+[2026-03-01 14:22:10] [payments] [ERROR]
 
+[ ] Split meta using: meta.split()
+[ ] Expect at least 4 tokens (timestamp has a space)
+[ ] If fewer than 4 tokens → skip line
+[ ] Extract:
+    - service token at index 2
+    - log level token at index 3
+[ ] Strip brackets using .strip("[]")
+[ ] If service or log level is empty → skip line
+
+========================================================
+5) FILTER LOG LEVELS
+--------------------------------------------------------
+[ ] Only process log levels:
+    - WARNING
+    - ERROR
+[ ] Ignore all other log levels (INFO, DEBUG, TRACE, etc.)
+
+========================================================
+6) UPDATE SERVICE COUNTS
+--------------------------------------------------------
+[ ] If service not in results["service_counts"]:
+    initialize:
+        {
+            "ERROR": 0,
+            "WARNING": 0
+        }
+[ ] Increment correct counter for the service
+
+========================================================
+7) TRACK ERROR MESSAGE FREQUENCIES
+--------------------------------------------------------
+[ ] Only for log level == "ERROR":
+    - Increment results["error_messages"][message]
+    - Use .get(message, 0) to avoid KeyError
+
+========================================================
+8) HANDLE MALFORMED LINES SAFELY
+--------------------------------------------------------
+[ ] Never crash on bad input
+[ ] Skip lines that:
+    - Don’t split correctly
+    - Have fewer than 4 meta tokens
+    - Have empty service or log level
+
+========================================================
+9) FIND MOST COMMON ERROR MESSAGE
+--------------------------------------------------------
+[ ] Initialize highest_count = 0
+[ ] Iterate over results["error_messages"].items() **after reading the file**
+[ ] For each (message, count):
+    [ ] Compare count to highest_count
+    [ ] If count is greater:
+        [ ] Update results["most_common_error"] to this message
+        [ ] Update highest_count to this count
+
+========================================================
+10) FINALIZE AND RETURN
+--------------------------------------------------------
+[ ] Return results dictionary
+
+========================================================
+EXPECTED RETURN STRUCTURE
+--------------------------------------------------------
+{
+    "service_counts": {
+        "payments": {"ERROR": 2, "WARNING": 0},
+        "auth": {"ERROR": 0, "WARNING": 1}
+    },
+    "error_messages": {
+        "DB connection timed out": 2
+    },
+    "most_common_error": "DB connection timed out"
+}
+========================================================
 """
+
+
 import pprint
 
-
-def analyze_logs(path):
-    error_count = 0
-    warning_count = 0
-    error_messages = {}
-    warning_messages = {}
-
-    with open(path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or " - " not in line:
-                continue
-            meta, message = line.split(" - ", 1)
-            level = meta.rsplit(" ", 1)[-1].strip("[]")
-
-            if level == "ERROR":
-                error_count += 1
-                error_messages[message] = error_messages.get(message, 0) + 1
-
-            elif level == "WARNING":
-                warning_count += 1
-                warning_messages[message] = warning_messages.get(message, 0) + 1
-
-    def most_common(messages):
-        top = None
-        top_count = 0
-        for msg, count in messages.items():
-            if count > top_count:
-                top = msg
-                top_count = count
-        return top
-
-    return {
-        "error_count": error_count,
-        "warning_count": warning_count,
-        "most_common_error": most_common(error_messages),
-        "most_common_warning": most_common(warning_messages),
+def analyze_logs(path: str) -> dict:
+    results = {
+        "service_counts": {},
+        "error_messages": {},
+        "most_common_error": None
     }
+    
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split(" - ", 1)
+                if len(parts) != 2:
+                    continue
+
+                meta, message = parts[0].strip(), parts[1].strip()
+                meta_tokens = meta.split()
+                if len(meta_tokens) < 4:
+                    continue
+
+                service = meta_tokens[2].strip("[]")
+                log_level = meta_tokens[3].strip("[]")
+                if not service or not log_level:
+                    continue
+
+                if log_level not in ("WARNING", "ERROR"):
+                    continue
+
+                # Update service counts
+                results["service_counts"].setdefault(service, {"WARNING": 0, "ERROR": 0})
+                results["service_counts"][service][log_level] += 1
+
+                # Track error messages
+                if log_level == "ERROR":
+                    results["error_messages"][message] = results["error_messages"].get(message, 0) + 1
+
+        # Determine most common error
+        highest_count = 0
+        for msg, count in results["error_messages"].items():
+            if count > highest_count:
+                results["most_common_error"] = msg
+                highest_count = count
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The log file can't be found or does not exist")
+
+    return results
+
+
+PATH = "/home/andre/DevOps-Practice/python-practice/python-advanced/code_challenge_exercises/log_parsing_challenge/system.log"
+results = analyze_logs(PATH)
+pprint.pprint(results, indent=4)
 
 
 
-result = analyze_logs("/home/andre/DevOps-Practice/python-practice/log_parsing_challenge/system.log")
-pprint.pprint(result, indent=4)
+
+
+
+
+
+
+
+

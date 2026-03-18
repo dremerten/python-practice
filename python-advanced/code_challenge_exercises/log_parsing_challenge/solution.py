@@ -7,9 +7,6 @@ Read a log file line by line and:
 - Count ERROR message frequencies across all services
 - Find the most common ERROR message (or None if no errors)
 
-Log format:
-[timestamp] [service] [log_level] - message
-
 ========================================================
 1) FUNCTION SCAFFOLDING
 --------------------------------------------------------
@@ -53,7 +50,7 @@ Example meta:
     - service token at index 2
     - log level token at index 3
 [ ] Strip brackets using .strip("[]")
-[ ] If service or level is empty → skip line
+[ ] If service or log level is empty → skip line
 
 ========================================================
 5) FILTER LOG LEVELS
@@ -87,29 +84,43 @@ Example meta:
 [ ] Never crash on bad input
 [ ] Skip lines that:
     - Don’t split correctly
-    - Have missing tokens
-    - Have empty service or level
+    - Have fewer than 4 meta tokens
+    - Have empty service or log level
 
 ========================================================
 9) FIND MOST COMMON ERROR MESSAGE
-
+--------------------------------------------------------
 [ ] Initialize highest_count = 0
-[ ] Iterate over results["error_messages"].items()
+[ ] Iterate over results["error_messages"].items() **after reading the file**
 [ ] For each (message, count):
     [ ] Compare count to highest_count
     [ ] If count is greater:
         [ ] Update results["most_common_error"] to this message
         [ ] Update highest_count to this count
+
 ========================================================
 10) FINALIZE AND RETURN
 --------------------------------------------------------
 [ ] Return results dictionary
+
+========================================================
+EXPECTED RETURN STRUCTURE
+--------------------------------------------------------
+{
+    "service_counts": {
+        "payments": {"ERROR": 2, "WARNING": 0},
+        "auth": {"ERROR": 0, "WARNING": 1}
+    },
+    "error_messages": {
+        "DB connection timed out": 2
+    },
+    "most_common_error": "DB connection timed out"
+}
 ========================================================
 """
 
-import pprint
 
-FILE="/home/andre/DevOps-Practice/python-practice/log_parsing_challenge/system.log"
+import pprint
 
 def analyze_logs(path: str) -> dict:
     results = {
@@ -117,49 +128,63 @@ def analyze_logs(path: str) -> dict:
         "error_messages": {},
         "most_common_error": None
     }
+    
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
 
-    with open(path, 'r') as f:
-        for line in f:
-            line = line.strip() # string of chars
-            if not line:
-                continue
-            parts = line.split(" - ", 1)
-            if len(parts) != 2:
-                continue
-            header, message = parts
-            header = header.split()
-            if len(header) < 4:
-                continue
+                parts = line.split(" - ", 1)
+                if len(parts) != 2:
+                    continue
 
-            service_name = header[2].strip("[]")
-            log_level = header[3].strip("[]")
+                meta, message = parts[0].strip(), parts[1].strip()
+                meta_tokens = meta.split()
+                if len(meta_tokens) < 4:
+                    continue
 
-            if service_name not in results["service_counts"]:
-                results["service_counts"][service_name] = {"INFO": 0, "DEBUG": 0, "WARNING": 0, "ERROR": 0, "TRACE": 0}
-            
-            if log_level == "INFO":
-                results["service_counts"][service_name]["INFO"] +=1
-            
-            if log_level == "DEBUG":
-                results["service_counts"][service_name]["DEBUG"] +=1
+                service = meta_tokens[2].strip("[]")
+                log_level = meta_tokens[3].strip("[]")
+                if not service or not log_level:
+                    continue
 
-            if log_level == "WARNING":
-                results["service_counts"][service_name]["WARNING"] +=1
+                if log_level not in ("WARNING", "ERROR"):
+                    continue
 
-            if log_level == "TRACE":
-                results["service_counts"][service_name]["TRACE"] +=1
+                # Update service counts
+                results["service_counts"].setdefault(service, {"WARNING": 0, "ERROR": 0})
+                results["service_counts"][service][log_level] += 1
 
-            if log_level == "ERROR":
-                results["service_counts"][service_name]["ERROR"] +=1
-                results["error_messages"][message] = results["error_messages"].get(message, 0) +1
+                # Track error messages
+                if log_level == "ERROR":
+                    results["error_messages"][message] = results["error_messages"].get(message, 0) + 1
 
-    highest_error_count = 0
-    for message,count in results["error_messages"].items():
-        if count > highest_error_count:
-            results["most_common_error"] = message
-            highest_error_count = count
+        # Determine most common error
+        highest_count = 0
+        for msg, count in results["error_messages"].items():
+            if count > highest_count:
+                results["most_common_error"] = msg
+                highest_count = count
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The log file can't be found or does not exist")
 
     return results
 
-results = analyze_logs(FILE)
+
+PATH = "/home/andre/DevOps-Practice/python-practice/python-advanced/code_challenge_exercises/log_parsing_challenge/system.log"
+results = analyze_logs(PATH)
 pprint.pprint(results, indent=4)
+
+
+
+
+
+
+
+
+
+
+

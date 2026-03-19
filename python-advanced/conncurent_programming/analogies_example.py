@@ -18,6 +18,14 @@ import multiprocessing
 import asyncio
 import itertools
 import sys
+'''
+We can map these libraries one-to-one as:
+
+    threading –> concurrency
+    multiprocessing –> parallelism
+    asyncio –> asynchronous
+
+'''
 
 
 BAR_LENGTH = 20

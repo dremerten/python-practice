@@ -1,0 +1,52 @@
+[
+    {
+        "job_name": "db-nightly",
+        "environment": "production",
+        "enabled": true,
+        "last_success_hours_ago": 6,
+        "retention_days": 35,
+        "encrypted": true,
+        "restore_tested": true,
+        "backup_target": "s3"
+    },
+    {
+        "job_name": "redis-snapshot",
+        "environment": "production",
+        "enabled": true,
+        "last_success_hours_ago": 30,
+        "retention_days": 14,
+        "encrypted": true,
+        "restore_tested": false,
+        "backup_target": "s3"
+    },
+    {
+        "job_name": "logs-archive",
+        "environment": "production",
+        "enabled": false,
+        "last_success_hours_ago": 10,
+        "retention_days": 90,
+        "encrypted": true,
+        "restore_tested": true,
+        "backup_target": "gcs"
+    },
+    {
+        "job_name": "metrics-backup",
+        "environment": "production",
+        "enabled": true,
+        "last_success_hours_ago": 8,
+        "retention_days": 30,
+        "encrypted": false,
+        "restore_tested": true,
+        "backup_target": "azure_blob"
+    },
+    {
+        "job_name": "secrets-export",
+        "environment": "staging",
+        "enabled": true,
+        "last_success_hours_ago": 4,
+        "retention_days": 60,
+        "encrypted": true,
+        "restore_tested": true,
+        "backup_target": "s3"
+    }
+]

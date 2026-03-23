@@ -142,4 +142,3 @@ if __name__ == "__main__":
 
     # To debug validate_host function
     # for host in host_reports:
-    #     print(validate_host(host))

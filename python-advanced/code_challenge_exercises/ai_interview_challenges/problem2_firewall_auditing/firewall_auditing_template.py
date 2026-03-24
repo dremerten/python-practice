@@ -34,7 +34,7 @@ def validate_rule(rule: dict) -> list[str]:
     #     - append problem message
     #     - return problems
 
-    # TODO: check if rule is enabled
+    # TODO: check if rule["enabled"] is enabled(True)
     # - if not True:
     #     - append problem
 

@@ -1,0 +1,54 @@
+pipeline_name: sample-ci-pipeline
+environment: staging
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+jobs:
+  lint-job:
+    stage: lint
+    image: python:3.11
+    script:
+      - flake8 .
+    env:
+      LOG_LEVEL: info
+
+  test-job:
+    stage: test
+    image: python:3.12
+    script:
+      - pytest
+    env:
+      API_TOKEN: "12345" # should trigger secret detection
+
+  build-job:
+    stage: build
+    image: python:latest # not allowed (latest tag)
+    script:
+      - docker build -t myapp .
+    env: {}
+
+  deploy-job:
+    stage: deploy
+    image: ubuntu:24.04
+    script:
+      - ./deploy.sh
+    branch: develop # must be main
+    needs:
+      - build-job # should depend on a test-stage job
+
+  insecure-job:
+    stage: test
+    image: alpine:3.20
+    script:
+      - echo "running"
+    env:
+      PASSWORD: "supersecret" # secret-like value
+
+  bad-structure-job:
+    stage: deploy
+    image: ubuntu:24.04
+    script: "not-a-list" # invalid script format

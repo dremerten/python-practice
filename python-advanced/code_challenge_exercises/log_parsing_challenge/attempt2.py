@@ -63,14 +63,13 @@ Example meta:
 ========================================================
 6) UPDATE SERVICE COUNTS
 --------------------------------------------------------
-[ ] Check if log_level.upper() is either "WARNING" or "ERROR"
 [ ] If service not in results["service_counts"]:
     initialize:
-        results["service_counts"][service] = {
+        {
             "ERROR": 0,
             "WARNING": 0
         }
-[ ] Increment results["service_counts"][service][log_level.upper()] by 1
+[ ] Increment correct counter for the service
 
 ========================================================
 7) TRACK ERROR MESSAGE FREQUENCIES
@@ -120,4 +119,62 @@ EXPECTED RETURN STRUCTURE
 ========================================================
 """
 
+import pprint
 
+
+def analyze_logs(path: str) -> dict:
+    results = {
+        "service_counts": {},
+        "error_messages": {},
+        "most_common_error": None
+    }
+    
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split(" - ", 1)
+                if len(parts) != 2:
+                    continue
+
+                meta, message = parts[0].strip(), parts[1].strip()
+                meta_tokens = meta.split()
+                if len(meta_tokens) < 4:
+                    continue
+
+                service = meta_tokens[2].strip("[]")
+                log_level = meta_tokens[3].strip("[]")
+                if not service or not log_level:
+                    continue
+
+                if log_level not in ("WARNING", "ERROR"):
+                    continue
+
+                # Update service counts
+                results["service_counts"].setdefault(service, {"WARNING": 0, "ERROR": 0})
+                results["service_counts"][service][log_level] += 1
+
+                # Track error messages
+                if log_level == "ERROR":
+                    results["error_messages"][message] = results["error_messages"].get(message, 0) + 1
+
+        # Determine most common error
+        highest_count = 0
+        for msg, count in results["error_messages"].items():
+            if count > highest_count:
+                results["most_common_error"] = msg
+                highest_count = count
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The log file can't be found or does not exist")
+
+    return results
+
+
+if __name__ == "__main__":
+    PATH="system.log"
+    result = analyze_logs(PATH)
+    pprint.pprint(result, indent=4)

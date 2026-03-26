@@ -1,0 +1,17 @@
+2026-03-21T10:15:32Z | /users/login | 401 | 312
+2026-03-21T10:15:35Z | /orders/create | 201 | 1208
+2026-03-21T10:15:40Z | /users/login | 401 | 298
+2026-03-21T10:15:45Z | /reports/daily | 500 | 1800
+2026-03-21T10:15:50Z | /orders/create | 201 | 980
+2026-03-21T10:15:55Z | /inventory/list | 200 | 150
+2026-03-21T10:16:00Z | /users/login | 403 | 330
+2026-03-21T10:16:05Z | /orders/create | 503 | 1420
+2026-03-21T10:16:10Z | /reports/daily | 200 | 1100
+2026-03-21T10:16:15Z | /users/profile | 404 | 210
+bad line here
+2026-03-21T10:16:25Z | /users/profile | abc | 210
+2026-03-21T10:16:30Z | /inventory/list | 200 | xyz
+2026-03-21T10:16:35Z | /users/login | 401 | 305
+2026-03-21T10:16:40Z | /orders/create | 201 | 1000
+2026-03-21T10:16:45Z | /users/profile | 404 | 220
+2026-03-21T10:16:50Z | /reports/daily | 500 | 1750

@@ -74,7 +74,7 @@ Implement a function that parses an API log file and produces summary metrics.
 ========================================================
 8) SLOW REQUEST TRACKING
 --------------------------------------------------------
-[ ] If response_time >= 1000:
+[ ] If response_time_ms >= 1000:
     - Check if endpoint exists in results["slow_endpoints"]
     - If not, initialize it to 0
     - Increment the count for that endpoint
@@ -125,3 +125,67 @@ Expected Result:
 }
 
 """
+
+import pprint
+
+def audit_api_responses(file_path: str) -> dict:
+    results = {
+        "status_counts": {},
+        "slow_endpoints": {},
+        "most_frequent_client_error": None
+     }
+
+    client_error_counts = {}
+
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if not line:
+                    continue
+
+                line = line.split("|")
+                if len(line) != 4:
+                    continue
+
+                timestamp = line[0].strip()
+                endpoint = line[1].strip()
+                status_code_str = line[2].strip()
+                response_time_str = line[3].strip()
+                if not timestamp or not endpoint or not status_code_str or not response_time_str:
+                    continue
+
+                try:
+                    status_code = int(status_code_str)
+                    response_time = int(response_time_str)
+                except ValueError:
+                    continue
+
+                if status_code not in results["status_counts"]:
+                    results["status_counts"][status_code] = 0
+                results["status_counts"][status_code] += 1
+
+                if response_time >= 1000:
+                    if endpoint not in results["slow_endpoints"]:
+                        results["slow_endpoints"][endpoint] = 0
+                    results["slow_endpoints"][endpoint] += 1
+
+                if 400 <= status_code <= 499:
+                    if endpoint not in client_error_counts:
+                        client_error_counts[endpoint] = 0
+                    client_error_counts[endpoint] += 1
+
+    except FileNotFoundError as e:
+        raise FileNotFoundError from e
+
+    if client_error_counts:
+        results["most_frequent_client_error"] = max(
+            client_error_counts,
+            key=client_error_counts.get
+
+        )
+
+    return results
+
+result = audit_api_responses(file_path="nginx.log")
+pprint.pprint(result, indent=2)

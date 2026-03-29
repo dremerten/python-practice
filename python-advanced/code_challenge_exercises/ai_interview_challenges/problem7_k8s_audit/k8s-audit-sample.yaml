@@ -1,0 +1,426 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: production
+  labels:
+    app: web-app
+    tier: frontend
+    team: platform
+    env: prod
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: web-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: web-app
+        tier: frontend
+        env: prod
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+    spec:
+      serviceAccountName: web-app-sa
+      securityContext:
+        fsGroup: 2000
+      containers:
+        - name: nginx
+          image: nginx:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+            - name: metrics
+              containerPort: 9113
+          env:
+            - name: NGINX_PORT
+              value: "80"
+            - name: APP_ENV
+              value: "production"
+            - name: CACHE_ENABLED
+              value: "true"
+          envFrom:
+            - configMapRef:
+                name: web-app-config
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /startupz
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-api
+  namespace: production
+  labels:
+    app: worker-api
+    tier: backend
+    team: platform
+    env: prod
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: worker-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: worker-api
+        tier: backend
+        env: prod
+    spec:
+      serviceAccountName: worker-api-sa
+      containers:
+        - name: worker-api
+          image: mycorp/worker
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: admin
+              containerPort: 9000
+          env:
+            - name: LOG_LEVEL
+              value: "info"
+            - name: APP_ENV
+              value: "production"
+            - name: QUEUE_NAME
+              value: "jobs"
+            - name: WORKER_CONCURRENCY
+              value: "4"
+          envFrom:
+            - configMapRef:
+                name: worker-config
+            - secretRef:
+                name: app-secrets
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: production
+  labels:
+    app: billing-service
+    tier: backend
+    team: payments
+    env: prod
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+        tier: backend
+        env: prod
+      annotations:
+        checksum/config: "8baf7c2a1"
+    spec:
+      serviceAccountName: billing-sa
+      containers:
+        - name: billing-service
+          image: python:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "http.server", "8081"]
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: BILLING_MODE
+              value: "live"
+            - name: REGION
+              value: "us-west"
+            - name: RETRY_COUNT
+              value: "5"
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: production
+  labels:
+    app: inventory-service
+    tier: backend
+    team: supply-chain
+    env: prod
+spec:
+  replicas: 4
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: inventory-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+        tier: backend
+        env: prod
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: inventory-sa
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: inventory-api
+          image: mycorp/inventory:2.3.7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8082
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: DB_POOL_SIZE
+              value: "20"
+            - name: FEATURE_STOCK_RECON
+              value: "enabled"
+          envFrom:
+            - configMapRef:
+                name: worker-config
+            - secretRef:
+                name: app-secrets
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "384Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+        - name: log-shipper
+          image: fluent/fluent-bit:2.2.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - -c
+            - /fluent-bit/etc/fluent-bit.conf
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      volumes:
+        - name: cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: production
+  labels:
+    app: web-app
+    tier: frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-app
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+    - name: metrics
+      protocol: TCP
+      port: 9113
+      targetPort: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-svc
+  namespace: production
+  labels:
+    app: billing-service
+    tier: backend
+spec:
+  type: NodePort
+  selector:
+    app: billing-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8081
+      targetPort: http
+      nodePort: 30081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: internal-api
+  namespace: production
+  labels:
+    app: inventory-service
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: inventory-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082
+      targetPort: http
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: metrics
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-app-config
+  namespace: production
+  labels:
+    app: web-app
+    managed-by: gitops
+data:
+  NGINX_WORKER_PROCESSES: "auto"
+  NGINX_CLIENT_MAX_BODY_SIZE: "20m"
+  ENABLE_GZIP: "true"
+  DEFAULT_BACKEND_TIMEOUT: "30"
+  FEATURE_BANNER: "spring-release"
+  LOG_FORMAT: "json"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-config
+  namespace: production
+  labels:
+    app: shared-backend
+    managed-by: gitops
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  REDIS_HOST: "redis.production.svc.cluster.local"
+  REDIS_PORT: "6379"
+  QUEUE_VISIBILITY_TIMEOUT: "60"
+  METRICS_ENABLED: "true"
+  OTEL_EXPORTER_ENDPOINT: "http://otel-collector.production.svc.cluster.local:4317"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: production
+  labels:
+    managed-by: external-secrets
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://billing_user:supersecret@postgres.production.svc.cluster.local:5432/platform"
+  REDIS_PASSWORD: "redis-prod-password"
+  JWT_SECRET: "replace-me-in-real-clusters"
+  STRIPE_API_KEY: "sk_live_not_real"

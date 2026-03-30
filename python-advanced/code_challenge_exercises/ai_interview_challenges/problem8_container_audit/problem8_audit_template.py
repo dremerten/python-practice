@@ -52,7 +52,7 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
     - print an error message
     - return results
 
-[ ] Hints for methods and functions to use here:
+Hints for methods and functions to use here:
     - open()
     - yaml.safe_load()
     - isinstance()
@@ -67,10 +67,10 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
     return results
 
 [ ] Set:
-    - results["service_count"] to the number of services
-    - defined_services to a set of the service names
+    - results["service_count"] to how many services are defined
+    - defined_services to a set of the service names (the dictionary’s keys)
 
-[ ] Hints for methods and functions to use here:
+Hints for methods and functions to use here:
     - dict.get()
     - isinstance()
     - len()
@@ -80,10 +80,10 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
 ========================================================
 4) SERVICE LOOP
 --------------------------------------------------------
-[ ] Iterate through services.items()
+[ ] Iterate through the services dictionary to access both service_name and service_data
 
 [ ] For each service_name and service_data:
-    - skip non-dictionary service values
+    - skip entries where service_data is not a dictionary
 
 [ ] Extract with safe defaults:
     - image -> ""
@@ -92,10 +92,10 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
     - depends_on -> []
     - restart -> None
 
-[ ] Hints for methods and functions to use here:
-    - dict.items()
-    - isinstance()
-    - dict.get()
+Hints for methods and functions to use here:
+    dict.items()
+    isinstance()
+    dict.get()
 
 ========================================================
 5) RESTART POLICY CHECK
@@ -103,10 +103,10 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
 [ ] If restart is missing, empty, or not a string:
     - append service_name to results["missing_restart_policy"]
 
-[ ] Hints for methods and functions to use here:
-    - not
-    - isinstance()
-    - list.append()
+Hints for methods and functions to use here:
+    not
+    isinstance()
+    list.append()
 
 ========================================================
 6) IMAGE PINNING CHECK
@@ -117,147 +117,94 @@ The YAML file is expected to contain a dictionary-based Docker Compose structure
     - image ends with ":latest"
     - or ":" is not in image
 
-[ ] Store:
-    - key -> service_name
-    - value -> full image string
+[ ] If the image is unpinned (ends with ":latest" or has no tag):
+    - record it in results["unpinned_images"] with:
+        key = service_name
+        value = image string
 
-[ ] Hints for methods and functions to use here:
-    - isinstance()
-    - str.endswith()
-    - in
+Hints for methods and functions to use here:
+    isinstance()
+    str.endswith()
+    in
 
 ========================================================
 7) PORT AUDIT
 --------------------------------------------------------
-[ ] Only process ports if ports is a list
-
-[ ] Loop through each port entry
-
-[ ] Support only string port entries in this format:
-    "host_port:container_port"
-
-[ ] Skip entries that are not strings
-[ ] Skip entries that do not contain ":"
-
-[ ] Split the string into two parts only:
-    - host part
-    - container part
-
-[ ] Convert host port to int
-[ ] Convert container port to int
-
-[ ] If conversion fails:
-    continue
-
-[ ] If:
-    - host_port > 0
-    - and container_port is in sensitive_container_ports
-
-[ ] Then store a tuple in:
-    results["public_sensitive_ports"][service_name]
-
-[ ] The tuple should be:
-    (original_port_string, container_port)
-
-[ ] If service_name is not already in results["public_sensitive_ports"]:
-    initialize it with an empty list
-
-[ ] Hints for methods and functions to use here:
-    - isinstance()
-    - ":" in value
-    - str.split(":", 1)
-    - int()
-    - try/except ValueError
-    - dict.setdefault()
-    - list.append()
-    - set membership with in
-    - tuple creation with ()
+[ ] Only continue if `ports` is a list
+[ ] Loop through each item in `ports`, call it `port_entry`
+[ ] Skip `port_entry` if it is not a string
+[ ] Skip `port_entry` if it does not contain a colon ":"
+[ ] Split `port_entry` using `split(":", 1)` and assign:
+      - left part -> `host_port_str`
+      - right part -> `container_port_str`
+[ ] Convert `host_port_str` to integer `host_port` inside try/except
+[ ] Convert `container_port_str` to integer `container_port` inside try/except
+[ ] If conversion fails, skip this `port_entry`
+[ ] Write an if statement to check:
+      host_port > 0 AND container_port is in sensitive_container_ports
+      - Inside the if:
+          * Ensure results["public_sensitive_ports"][service_name] exists as a list
+            Hint: use setdefault(service_name, [])
+          * Append a tuple `(port_entry, container_port)` to the list for that `service_name`
 
 ========================================================
 8) ENVIRONMENT EXTRACTION
 --------------------------------------------------------
-[ ] Handle environment in two supported forms:
+Only process `environment` if it is a list or a dict
 
-[ ] Case 1: environment is a list
-    - each valid item is a string
-    - use only items containing "="
-    - split into key and value using one split only
-    - keep only the key name
+[ ] Case 1: `environment` is a list
+    - Loop through each item, call it `item`
+    - Skip `item` if it is not a string
+    - Skip `item` if it does not contain "="
+    - Split `item` at the first "=" using `split("=", 1)`:
+          * left part -> `variable_name`
+          * right part -> `_` (use `_` to ignore the value)
+    - Ensure `env_usage[variable_name]` exists as a set
+          * Hint: use setdefault(variable_name, set())
+    - Add `service_name` to `env_usage[variable_name]`
 
-[ ] Case 2: environment is a dictionary
-    - iterate through its keys
-    - keep only string keys
-
-[ ] For every extracted environment variable name:
-    - if not already in env_usage:
-        initialize with an empty set
-    - add service_name to env_usage[variable_name]
-
-[ ] Hints for methods and functions to use here:
-    - isinstance()
-    - list loop
-    - dict.keys()
-    - str.split("=", 1)
-    - dict.setdefault()
-    - set.add()
+[ ] Case 2: `environment` is a dict
+    - Loop through its keys, call each key `variable_name`
+    - Skip `variable_name` if it is not a string
+    - Ensure `env_usage[variable_name]` exists as a set
+          * Hint: use setdefault(variable_name, set())
+    - Add `service_name` to `env_usage[variable_name]`
 
 ========================================================
 9) DEPENDENCY CHECK
 --------------------------------------------------------
-[ ] Handle depends_on in two supported forms:
+[ ] Create a list called `missing_dependencies`
 
-[ ] Case 1: depends_on is a list
-    - use only string entries as dependency names
+Only process `depends_on` if it is a list or a dict
 
-[ ] Case 2: depends_on is a dictionary
-    - use its keys as dependency names
+[ ] Case 1: `depends_on` is a list
+    - Loop through each item in depends_on, call it `dependency_name`
+    - Skip `dependency_name` if it is not a string
+    - If `dependency_name` is not in `defined_services`, append it to `missing_dependencies`
 
-[ ] Build a temporary list of missing dependencies for the current service
+[ ] Case 2: `depends_on` is a dict
+    - Loop through its keys, call each key `dependency_name`
+    - If `dependency_name` is not in `defined_services`, append it to `missing_dependencies`
 
-[ ] For each dependency name:
-    - if dependency_name is not in defined_services
-    - append it to the missing list
-
-[ ] If the missing list is not empty:
-    - store the sorted missing list in
-      results["undefined_dependencies"][service_name]
-
-[ ] Hints for methods and functions to use here:
-    - isinstance()
-    - list.append()
-    - dict.keys()
-    - in
-    - sorted()
-
+[ ] After processing all dependencies:
+    - If `missing_dependencies` contains any items:
+          * Store a **sorted copy** in `results["undefined_dependencies"][service_name]
 ========================================================
 10) SHARED ENVIRONMENT VARIABLES
 --------------------------------------------------------
-[ ] Loop through env_usage.items()
+[ ] Loop through `env_usage.items()`, unpack as `variable_name` and `service_set`
 
-[ ] For each variable_name and service_set:
-    - if the number of services is greater than 1
-    - store the sorted service names as a list in
-      results["shared_environment_variables"][variable_name]
+[ ] For each `variable_name` and `service_set`:
+    - If `len(service_set)` > 1
+    - Assign `results["shared_environment_variables"][variable_name] = sorted(service_set)`
+      (sorting converts the set into a list in place of the assignment)
 
-[ ] Hints for methods and functions to use here:
-    - dict.items()
-    - len()
-    - sorted()
-    - list()
-
-========================================================
 11) FINAL PROCESSING
 --------------------------------------------------------
-[ ] Sort:
-    - results["missing_restart_policy"]
+[ ] Sort the list `results["missing_restart_policy"]` in place
 
-[ ] For each service in results["public_sensitive_ports"]:
-    - sort the list of tuples
-
-[ ] Hints for methods and functions to use here:
-    - list.sort()
-    - sorted()
-    - dict loop
+[ ] Loop through each `service_name` in `results["public_sensitive_ports"]`:
+    - Sort the list of tuples `results["public_sensitive_ports"][service_name]` in place
 
 ========================================================
 12) RETURN VALUE

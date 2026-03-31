@@ -168,7 +168,7 @@ Note:
 ========================================================
 9) FINAL PROCESSING
 --------------------------------------------------------
-After the loop finishes:
+After the main for loop finishes:
 
 [ ] Convert duplicates set to a sorted list:
     results["duplicate_variables"] = sorted(duplicates)

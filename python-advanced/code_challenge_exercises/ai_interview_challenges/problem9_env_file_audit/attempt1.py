@@ -1,3 +1,6 @@
+import json
+
+
 def audit_env_file(file_path: str) -> dict:
     results = {
         "total_variables": 0,
@@ -8,12 +11,11 @@ def audit_env_file(file_path: str) -> dict:
 
     seen_variables = set()
     duplicates = set()
-
     sensitive_keywords = ["PASSWORD", "SECRET", "KEY", "TOKEN"]
 
     try:
-        with open(file_path, "r") as file:
-            for line in file:
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
                 line = line.strip()
 
                 if not line or line.startswith("#"):
@@ -47,17 +49,16 @@ def audit_env_file(file_path: str) -> dict:
         results["empty_values"].sort()
         results["sensitive_variables"].sort()
 
-        return results
-
     except FileNotFoundError:
-        print(f"Error: File not found: {file_path}")
-        return results
-    except Exception as error:
-        print(f"Error: {error}")
+        print(f"File not found: {file_path}")
         return results
 
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return results
+
+    return results
 
 if __name__ == "__main__":
-    sample_file_path = ".env"
-    audit_results = audit_env_file(sample_file_path)
-    print(audit_results)
+    result = audit_env_file(file_path=".env")
+    print(json.dumps(result, indent=4))

@@ -137,7 +137,7 @@ Hints for methods and functions to use here:
 --------------------------------------------------------
 [ ] Set:
     - results["service_count"] to how many services are defined
-    - Take the dictionary that holds all the services,
+    - services is a dictionary (with keys/values)
       get its keys (the service names), and put them into a set.
       Assign that set to defined_services
 
@@ -188,7 +188,7 @@ Hints for methods and functions to use here:
     # if isinstance(image, str) and image:
     - check if image ends with ":latest" or does not contain ":"
     - if either is true, record the service in results["unpinned_images"]
-      with [service_name] as the key and image as the value
+      with [service_name] as the KEY and image as the VALUE
 
 Hints for methods and functions to use here:
     - isinstance()
@@ -206,7 +206,7 @@ Hints for methods and functions to use here:
       - right part -> container_port_str
 [ ] Convert host_port_str to integer host_port inside try/except
 [ ] Convert container_port_str to integer container_port inside try/except
-[ ] If conversion fails, skip this port_entry
+[ ] If conversion fails except ValueError, skip this port_entry
 [ ] Write an if statement to check:
       host_port > 0 AND container_port is in sensitive_container_ports
       - Inside the if:

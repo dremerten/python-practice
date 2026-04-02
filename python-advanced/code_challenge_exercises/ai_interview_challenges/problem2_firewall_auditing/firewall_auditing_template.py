@@ -17,6 +17,15 @@ Do NOT change:
 - return structure
 - field names
 
+
+#### Note #######
+
+# to debug
+with open("firewall_rules.json") as f:
+    rules = json.load(f)
+
+for rule in rules:
+    validate_rule(rule)
 ======================================================================
 1) CONSTANTS
 ======================================================================

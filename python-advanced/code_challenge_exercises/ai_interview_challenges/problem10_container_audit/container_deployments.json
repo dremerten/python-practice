@@ -1,0 +1,62 @@
+[
+  {
+    "container_id": "ctr-001",
+    "environment": "production",
+    "image": "nginx",
+    "tag": "1.25.3",
+    "privileged": false,
+    "restart_policy": "always",
+    "cpu_limit": 1,
+    "memory_limit": "512Mi"
+  },
+  {
+    "container_id": "ctr-002",
+    "environment": "production",
+    "image": "redis",
+    "tag": "latest",
+    "privileged": false,
+    "restart_policy": "always",
+    "cpu_limit": 0.5,
+    "memory_limit": "256Mi"
+  },
+  {
+    "container_id": "ctr-003",
+    "environment": "production",
+    "image": "api",
+    "tag": "2.1.0",
+    "privileged": true,
+    "restart_policy": "always",
+    "cpu_limit": 1,
+    "memory_limit": "512Mi"
+  },
+  {
+    "container_id": "ctr-004",
+    "environment": "staging",
+    "image": "worker",
+    "tag": "3.0.1",
+    "privileged": false,
+    "restart_policy": "unless-stopped",
+    "cpu_limit": 2,
+    "memory_limit": "1Gi"
+  },
+  {
+    "container_id": "ctr-005",
+    "environment": "production",
+    "image": "db-backup",
+    "tag": "1.0.0",
+    "privileged": false,
+    "restart_policy": "sometimes",
+    "cpu_limit": -1,
+    "memory_limit": "2048"
+  },
+  {
+    "container_id": "ctr-006",
+    "environment": "production",
+    "image": "metrics",
+    "tag": "1.4.2",
+    "privileged": false,
+    "restart_policy": "on-failure",
+    "cpu_limit": 1,
+    "memory_limit": "256Mi"
+  }
+]

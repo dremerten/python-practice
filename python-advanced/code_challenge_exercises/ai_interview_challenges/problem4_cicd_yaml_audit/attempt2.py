@@ -1,20 +1,8 @@
 import pprint
 import yaml
 
-REQUIRED_TOP_LEVEL_KEYS = {
-    "pipeline_name",
-    "environment",
-    "stages",
-    "jobs",
-}
-
-REQUIRED_STAGE_ORDER = [
-    "lint",
-    "test",
-    "build",
-    "deploy",
-]
-
+REQUIRED_TOP_LEVEL_KEYS = {"pipeline_name", "environment", "stages", "jobs"}
+REQUIRED_STAGE_ORDER = ["lint", "test", "build", "deploy"]
 ALLOWED_RUNNER_IMAGES = {
     "python:3.11",
     "python:3.12",
@@ -29,9 +17,9 @@ def validate_pipeline_structure(pipeline: dict) -> list[str]:
     if not isinstance(pipeline, dict):
         return ["Invalid pipeline: not a dictionary"]
 
-    missing_keys = REQUIRED_TOP_LEVEL_KEYS - pipeline.keys()
+    missing_keys = [key for key in REQUIRED_TOP_LEVEL_KEYS if key not in pipeline]
     if missing_keys:
-        problems.append(f"Pipeline is missing required top-level keys: {sorted(missing_keys)}")
+        problems.append(f"Pipeline is missing required top-level keys: {missing_keys}")
         return problems
 
     pipeline_name = pipeline.get("pipeline_name")
@@ -42,13 +30,18 @@ def validate_pipeline_structure(pipeline: dict) -> list[str]:
     if not isinstance(environment, str) or environment.strip() == "":
         problems.append("Pipeline environment must be a non-empty string")
 
-    stages = pipeline.get("stages")
+    stages = pipeline.get("stages", [])
     if not isinstance(stages, list):
         problems.append("Stages must be defined as a list")
     else:
-        missing_stages = [s for s in REQUIRED_STAGE_ORDER if s not in stages]
+        missing_stages = [
+            stage_name
+            for stage_name in REQUIRED_STAGE_ORDER
+            if stage_name not in stages
+        ]
         if missing_stages:
             problems.append(f"Pipeline is missing required stages: {missing_stages}")
+
         if stages != REQUIRED_STAGE_ORDER:
             problems.append("Pipeline stages are not in the required order")
 
@@ -61,11 +54,11 @@ def validate_pipeline_structure(pipeline: dict) -> list[str]:
     return problems
 
 
-def validate_job(job_name: str, job_data: dict, all_jobs: dict) -> list[str]:
+def validate_job(job_name, job_data, all_jobs):
     problems = []
 
     if not isinstance(job_data, dict):
-        return [f"{job_name} is invalid: job definition is not a dictionary"]
+        return [f"{job_name} must be defined as a dictionary"]
 
     required_keys = {"stage", "image", "script"}
     missing_keys = required_keys - job_data.keys()
@@ -84,27 +77,31 @@ def validate_job(job_name: str, job_data: dict, all_jobs: dict) -> list[str]:
     script = job_data.get("script")
     if not isinstance(script, list) or len(script) == 0:
         problems.append(f"{job_name} script must be a non-empty list")
+        return problems
 
+    env = job_data.get("env", {})
     if not isinstance(env, dict):
         problems.append(f"{job_name} env must be a dictionary")
     else:
         sensitive_keywords = {"password", "secret", "token"}
 
         for key, value in env.items():
-            if not isinstance(value, str):
-                continue
+            key_lower = str(key).lower()
+            value_lower = value.lower() if isinstance(value, str) else ""
 
-            value_lower = value.lower()
-
-            if any(keyword in value_lower for keyword in sensitive_keywords) or value.startswith("AKIA"):
+            if (
+                any(keyword in key_lower for keyword in sensitive_keywords)
+                or any(keyword in value_lower for keyword in sensitive_keywords)
+                or (isinstance(value, str) and value.startswith("AKIA"))
+            ):
                 problems.append(f"{job_name} contains hardcoded secret in env: {key}")
 
-    if job_data.get("stage") == "deploy":
+    if stage == "deploy":
         branch = job_data.get("branch")
         if branch != "main":
             problems.append(f"{job_name} must deploy from main branch")
 
-    if job_data.get("stage") == "deploy":
+    if stage == "deploy":
         needs = job_data.get("needs")
         if not isinstance(needs, list):
             problems.append(f"{job_name} must define dependencies as a list")
@@ -162,10 +159,8 @@ def evaluate_pipeline_compliance(pipeline: dict) -> dict:
     if result["environment"] != "production":
         result["reasons"].append("Pipeline environment must be production")
 
-    result["compliant"] = (
-        len(result["reasons"]) == 0
-        and result["failed_jobs_count"] == 0
-    )
+    if len(result["reasons"]) == 0 and result["failed_jobs_count"] == 0:
+        result["compliant"] = True
 
     return result
 
@@ -176,6 +171,7 @@ if __name__ == "__main__":
     try:
         with open(PATH, "r") as f:
             pipeline = yaml.safe_load(f)
+
         result = evaluate_pipeline_compliance(pipeline)
         pprint.pprint(result)
 

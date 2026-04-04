@@ -77,7 +77,6 @@ def validate_job(job_name, job_data, all_jobs):
     script = job_data.get("script")
     if not isinstance(script, list) or len(script) == 0:
         problems.append(f"{job_name} script must be a non-empty list")
-        return problems
 
     env = job_data.get("env", {})
     if not isinstance(env, dict):
@@ -120,24 +119,23 @@ def validate_job(job_name, job_data, all_jobs):
 
     return problems
 
-
 def evaluate_pipeline_compliance(pipeline: dict) -> dict:
     result = {
         "compliant": False,
         "pipeline_name": None,
         "environment": None,
         "total_jobs": 0,
-        "valid_jobs_count": 0,
+        "valid_jobs_count": 0, 
         "failed_jobs_count": 0,
         "failed_jobs": [],
-        "reasons": [],
+        "reasons": []
     }
 
     problems = validate_pipeline_structure(pipeline)
     if problems:
         result["reasons"].extend(problems)
         return result
-
+    
     result["pipeline_name"] = pipeline.get("pipeline_name")
     result["environment"] = pipeline.get("environment")
 
@@ -152,17 +150,20 @@ def evaluate_pipeline_compliance(pipeline: dict) -> dict:
             result["reasons"].extend(problems)
         else:
             result["valid_jobs_count"] += 1
-
+    
     if len(jobs) < 3:
         result["reasons"].append("Pipeline must define at least 3 jobs")
-
+    
     if result["environment"] != "production":
-        result["reasons"].append("Pipeline environment must be production")
-
-    if len(result["reasons"]) == 0 and result["failed_jobs_count"] == 0:
-        result["compliant"] = True
-
+        result["reasons"].append("Pipeline environment must be production!")
+    
+    result["compliant"] = (
+        len(result["reasons"]) == 0
+        and result["failed_jobs_count"] == 0
+    )
+    
     return result
+
 
 
 if __name__ == "__main__":

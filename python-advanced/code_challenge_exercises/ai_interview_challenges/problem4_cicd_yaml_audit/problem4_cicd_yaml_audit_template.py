@@ -201,7 +201,7 @@ validate_job(job_name, job_data, all_jobs):
 EVALUATION FLOW
 ----------------------------------------
 
-evaluate_pipeline_compliance(pipeline):
+define evaluate_pipeline_compliance(pipeline):
 
 - Create result DICTIONARY with initial values:
  result = {

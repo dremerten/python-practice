@@ -58,8 +58,7 @@ Implement a function that parses an API log file and produces summary metrics.
 
 [ ] Use try/except:
     try:
-        status_code = int(status_code_str)
-        response_time = int(response_time_str)
+        conversion
     except ValueError:
         continue
 
@@ -82,7 +81,7 @@ Implement a function that parses an API log file and produces summary metrics.
 ========================================================
 9) CLIENT ERROR TRACKING
 --------------------------------------------------------
-[ ] If 400 <= status_code <= 499:
+[ ] Check if the status code is in the 400–499 range
     - Check if endpoint exists in client_error_counts
     - If not, initialize it to 0
     - Increment the count for that endpoint

@@ -1,0 +1,19 @@
+{
+    "method_counts": {
+        "GET": 333,
+        "POST": 27
+    },
+    "status_class_counts": {
+        "2xx": 240,
+        "3xx": 40,
+        "4xx": 60,
+        "5xx": 20
+    },
+    "top_404_path": "/favicon.ico",
+    "suspicious_ips": {
+        "198.51.100.23": 14,
+        "192.0.2.44": 7
+    },
+    "busiest_minute": "2026-04-04 09:28",
+    "average_bytes_sent_by_successful_get": 2643.77
+}

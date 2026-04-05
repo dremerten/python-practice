@@ -1,0 +1,447 @@
+"""
+NGINX LOG ANALYSIS — ROUTING + SCANNER SUMMARY
+
+PURPOSE
+Write one function that reads a provided nginx access log file and returns a fixed summary dictionary.
+
+This specification is intended to match the provided solution structure and behavior exactly.
+
+CONSTRAINTS
+- No imports
+- No regex
+- No helper libraries
+- Use only basic Python syntax and built-in types/functions
+- Use simple string methods such as:
+    split()
+    strip()
+    find()
+    startswith()
+    endswith()
+    slicing
+- Use dictionaries, loops, if/else, try/except
+- Skip malformed rows safely
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+Implement exactly this function:
+
+    analyze_nginx_log(file_path: str, suspicious_threshold: int = 5) -> dict
+
+Do not add extra parameters.
+Do not print anything.
+Return one dictionary.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+Return exactly this structure:
+
+{
+    "method_counts": {},
+    "status_class_counts": {},
+    "top_404_path": None,
+    "suspicious_ips": {},
+    "busiest_minute": None,
+    "average_bytes_sent_by_successful_get": None,
+}
+
+These six keys must always exist in the returned dictionary, even if the file is missing or all rows are invalid.
+
+========================================================
+3) MEANING OF EACH RETURN FIELD
+--------------------------------------------------------
+Use helper state for the computations that feed the final result
+
+Initialize the following:
+
+- path_404_counts -> dict[str, int]
+- suspicious_ip_counts -> dict[str, int]
+- minute_counts -> dict[str, int]
+- successful_get_bytes_total -> int
+- successful_get_count -> int
+
+    path_404_counts = {}
+    suspicious_ip_counts = {}
+    minute_counts = {}
+    successful_get_bytes_total = 0
+    successful_get_count = 0
+
+========================================================
+4) LOG FORMAT - NO CODE
+--------------------------------------------------------
+Each line in nginx.log follows this general shape:
+
+    <ip> - - [<timestamp>] "<method> <path> HTTP/1.1" <status> <bytes_sent> "<referer>" "<user_agent>" rt=<request_time>
+
+Example:
+
+    203.0.113.10 - - [04/Apr/2026:09:00:00 -0700] "GET / HTTP/1.1" 200 800 "-" "Mozilla/5.0" rt=0.050
+
+The solution parses only the parts it needs:
+- ip
+- timestamp
+- request_line
+- status
+- bytes_sent
+
+The referer, user_agent, protocol, and request time do not affect the final result.
+
+========================================================
+5) REQUIRED VARIABLE NAMES - NO CODE
+--------------------------------------------------------
+Use these names in the solution:
+
+Final result:
+- results
+
+Helper state:
+- path_404_counts
+- suspicious_ip_counts
+- minute_counts
+- successful_get_bytes_total
+- successful_get_count
+
+Per-line variables:
+- line
+- ip_address
+- timestamp
+- request_line
+- method
+- path
+- normalized_path
+- status_code
+- bytes_sent
+- minute_key
+
+You may also use temporary parsing names such as:
+- parts
+- client_metadata
+- request_line
+- status_section
+- client_tokens
+- request_tokens
+- status_tokens
+- timestamp_main
+- timestamp_parts
+- date_part
+- date_tokens
+- day
+- month_name
+- year
+- hour
+- minute
+
+========================================================
+6) REQUIRED CONSTANT / ASSUMED DEFINITIONS
+--------------------------------------------------------
+Define a month_map dictionary with exactly these values:
+
+    Jan -> 01
+    Feb -> 02
+    Mar -> 03
+    Apr -> 04
+    May -> 05
+    Jun -> 06
+    Jul -> 07
+    Aug -> 08
+    Sep -> 09
+    Oct -> 10
+    Nov -> 11
+    Dec -> 12
+
+Define suspicious_targets as this exact tuple:
+
+    (
+        "/admin",
+        "/wp-admin",
+        "/wp-login.php",
+        "/.env",
+        "/phpmyadmin",
+    )
+
+========================================================
+7) FILE HANDLING RULE
+--------------------------------------------------------
+Open the file using a context manager inside a try block.
+
+If opening the file raises FileNotFoundError:
+return the empty results structure immediately.
+
+Do not raise the error further.
+
+========================================================
+8) LINE PROCESSING RULES
+--------------------------------------------------------
+Process the file line by line.
+
+For each line:
+1. Strip whitespace
+2. Skip it if it becomes empty
+
+========================================================
+9) REQUIRED PARSING APPROACH
+--------------------------------------------------------
+Use this parsing approach:
+
+Split the line using the double-quote character.
+Store the result in parts.
+If the number of elements in parts is less than 6, skip the row.
+(Note: valid rows may produce more than 6 parts due to multiple quoted fields)
+
+B) Use:
+- Store 
+- parts[0] as client_metadata, 
+- parts[1] as request_line, and 
+- parts[2] as status_section
+- Clean up each of these by removing extra whitespace before using them
+
+C) Extract ip_address
+- Split client_metadata into client_tokens removing whitespace
+- If client_tokens is empty, skip the row
+- Otherwise, the first element of client_tokens is the ip_address
+
+D) Extract timestamp
+
+Work only with client_metadata.
+
+1. Find the position of the first "[" character and store it in timestamp_start.
+2. Find the position of the first "]" character and store it in timestamp_end.
+
+3. If ANY of the following conditions are true, skip the row:
+   - timestamp_start is equal to -1
+   - timestamp_end is equal to -1
+   - timestamp_end is less than or equal to timestamp_start + 1
+
+4. Create the timestamp using slicing:
+   - Use client_metadata as the source string
+   - Start at index timestamp_start + 1
+   - Stop at index timestamp_end
+   Assign this slice to timestamp
+
+E) Extract request fields and response values
+
+- Split the request line into request_fields
+- If request_fields does not contain exactly 3 elements, skip the row
+- Use the first element as the method and the second as the path
+
+- Split the status section into status_fields
+- If status_fields has fewer than 2 elements, skip the row
+
+- Use a try block to convert the first value to status_code and the second to bytes_sent
+- Use an except ValueError block to skip the row if conversion fails
+
+========================================================
+10) PATH NORMALIZATION
+--------------------------------------------------------
+Create normalized_path from path as follows:
+
+- If path contains "?", keep only the part before the first "?"
+- Otherwise use path unchanged
+
+Use normalized_path for:
+- 404 path counting
+- suspicious path checks
+
+========================================================
+11) TIMESTAMP CONVERSION RULE
+--------------------------------------------------------
+The input timestamp looks like:
+
+    04/Apr/2026:09:28:31 -0700
+
+The solution converts it into:
+
+    2026-04-04 09:28
+
+Use this exact parsing sequence:
+
+1. Split timestamp by whitespace and take the first part
+2. Split that value by ":"
+3. It must produce at least 3 parts
+4. Use:
+   - date_part = first part
+   - hour = second part
+   - minute = third part
+5. Split date_part by "/"
+6. It must produce exactly 3 parts
+7. Use:
+   - day
+   - month_name
+   - year
+8. Convert month_name using month_map
+9. Build:
+
+    year + "-" + month_map[month_name] + "-" + day + " " + hour + ":" + minute
+
+If any part fails, skip the row.
+
+========================================================
+12) VALID ROW DEFINITION
+--------------------------------------------------------
+A row is considered valid only after all required parsing succeeds and this final check passes:
+
+- ip_address is truthy
+- timestamp is truthy
+- method is truthy
+- path is truthy
+- minute_key is truthy
+
+Only then should the row affect any counts.
+
+========================================================
+13) COUNTS TO UPDATE FOR EVERY VALID ROW
+--------------------------------------------------------
+For each valid row, update these in this order:
+
+A) method_counts
+Increment:
+    results["method_counts"][method]
+
+B) status_class_counts
+Map status_code as follows:
+- 200–299 -> "2xx"
+- 300–399 -> "3xx"
+- 400–499 -> "4xx"
+- 500–599 -> "5xx"
+- otherwise -> no status bucket update
+
+If the mapped status bucket is valid, increment:
+    results["status_class_counts"][status_class]
+
+C) minute_counts
+Increment:
+    minute_counts[minute_key]
+
+D) path_404_counts
+If status_code == 404:
+increment:
+    path_404_counts[normalized_path]
+
+E) suspicious_ip_counts
+Check every target in suspicious_targets.
+If normalized_path matches by:
+- normalized_path == target
+OR
+- normalized_path.startswith(target + "/")
+then increment:
+    suspicious_ip_counts[ip_address]
+and stop checking additional targets for that row.
+
+F) successful GET tracking
+If method == "GET" and status_code == 200:
+- add bytes_sent to successful_get_bytes_total
+- increment successful_get_count
+
+========================================================
+14) INITIAL STATE BEFORE FILE LOOP
+--------------------------------------------------------
+Before reading the file, create:
+
+A) results exactly as:
+
+{
+    "method_counts": {},
+    "status_class_counts": {},
+    "top_404_path": None,
+    "suspicious_ips": {},
+    "busiest_minute": None,
+    "average_bytes_sent_by_successful_get": None,
+}
+
+B) helper state:
+- path_404_counts = {}
+- suspicious_ip_counts = {}
+- minute_counts = {}
+- successful_get_bytes_total = 0
+- successful_get_count = 0
+
+C) constants:
+- month_map
+- suspicious_targets
+
+========================================================
+15) FINAL COMPUTATION RULES AFTER THE LOOP
+--------------------------------------------------------
+After all lines are processed, compute the remaining output fields in this order:
+
+A) top_404_path
+If path_404_counts is not empty:
+- find the highest count
+- collect all paths with that count
+- assign the lexicographically smallest one to:
+    results["top_404_path"]
+
+Otherwise leave it as None.
+
+B) suspicious_ips
+Loop through suspicious_ip_counts in normal dictionary iteration order.
+For each IP whose count is >= suspicious_threshold:
+copy it into:
+    results["suspicious_ips"]
+
+Do not sort.
+
+C) busiest_minute
+If minute_counts is not empty:
+- find the highest count
+- collect all minute strings with that count
+- assign the earliest one using simple string comparison to:
+    results["busiest_minute"]
+
+Otherwise leave it as None.
+
+D) average_bytes_sent_by_successful_get
+If successful_get_count > 0:
+- divide successful_get_bytes_total by successful_get_count
+- round to 2 decimals
+- assign to:
+    results["average_bytes_sent_by_successful_get"]
+
+Otherwise leave it as None.
+
+========================================================
+16) RETURN RULE
+--------------------------------------------------------
+Return results at the end of the function.
+
+========================================================
+17) EXPECTED RESULT FOR THE PROVIDED nginx.log
+--------------------------------------------------------
+{
+    "method_counts": {
+        "GET": 333,
+        "POST": 27
+    },
+    "status_class_counts": {
+        "2xx": 240,
+        "3xx": 40,
+        "4xx": 60,
+        "5xx": 20
+    },
+    "top_404_path": "/favicon.ico",
+    "suspicious_ips": {
+        "198.51.100.23": 14,
+        "192.0.2.44": 7
+    },
+    "busiest_minute": "2026-04-04 09:28",
+    "average_bytes_sent_by_successful_get": 2643.77
+}
+
+========================================================
+18) IMPLEMENTATION STYLE EXPECTATION
+--------------------------------------------------------
+The final solution should read like a straightforward log parser:
+- define results and helper state
+- define constants
+- open file
+- loop through lines
+- parse using split/find/basic checks
+- validate and skip bad rows
+- update counters
+- compute final summary values
+- return results
+
+Do not use shortcuts that hide the logic.
+The intended difficulty is junior-mid level Python / DevOps.
+"""

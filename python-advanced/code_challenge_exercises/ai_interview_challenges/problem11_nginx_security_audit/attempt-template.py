@@ -1,3 +1,5 @@
+import pprint
+
 
 
 def analyze_nginx_log(file_path: str, suspicious_threshold: int = 5) -> dict:
@@ -44,10 +46,10 @@ def analyze_nginx_log(file_path: str, suspicious_threshold: int = 5) -> dict:
                 line = line.strip()
                 if not line:
                     continue
+                # Start on Step 9
                 breakpoint()
         
 
-        return results
     except FileNotFoundError:
         return results
 

@@ -234,214 +234,221 @@ E) Extract request fields and response values
 ========================================================
 10) PATH NORMALIZATION
 --------------------------------------------------------
-Create normalized_path from path as follows:
+Create normalized_path from path by removing any query parameters.
 
-- If path contains "?", keep only the part before the first "?"
-- Otherwise use path unchanged
+- Find the position of the first "?" in the path and store it in question_mark_index
+- If question_mark_index is not equal to -1:
+    - Create normalized_path (slice) by taking everything from the start of the
+    path up to (but not including) question_mark_index
+- Otherwise:
+    - Use the original path as normalized_path
 
-Use normalized_path for:
-- 404 path counting
-- suspicious path checks
+Use normalized_path so that query parameters do not create separate entries for the same path.
+
+Note:
+
+Case 1 (your example)
+path = '/'
+→ no "?"
+→ .find("?") returns -1
+→ keep it as-is
+
+Case 2
+path = '/login?next=/dashboard'
+"?" exists
+→ .find("?") returns the index where "?" appears (e.g., 6)
+Take everything before it:
+normalized_path = '/login'
+
+Fixed explanation (clearer)
+- Look at the path string (not the full log line)
+- Check if the path contains a "?"
+- If it does:
+    - keep only the part before "?"
+- If it does not:
+    - use the path as-is
 
 ========================================================
 11) TIMESTAMP CONVERSION RULE
 --------------------------------------------------------
-The input timestamp looks like:
+Convert the timestamp into the format: YYYY-MM-DD HH:MM
 
-    04/Apr/2026:09:28:31 -0700
+- Split the timestamp by whitespace and take the first index value → store as timestamp_main
+- Split timestamp_main by ":" and store the result in timestamp_parts
+- If timestamp_parts has fewer than 3 elements, skip the row
 
-The solution converts it into:
+- From timestamp_parts:
+    - first element → date_part
+    - second element → hour
+    - third element → minute
 
-    2026-04-04 09:28
+- Split date_part by "/" and store the result in date_tokens
+- If date_tokens does not contain exactly 3 elements, skip the row
 
-Use this exact parsing sequence:
+- From date_tokens:
+    - first element → day
+    - second element → month
+    - third element → year
 
-1. Split timestamp by whitespace and take the first part
-2. Split that value by ":"
-3. It must produce at least 3 parts
-4. Use:
-   - date_part = first part
-   - hour = second part
-   - minute = third part
-5. Split date_part by "/"
-6. It must produce exactly 3 parts
-7. Use:
-   - day
-   - month_name
-   - year
-8. Convert month_name using month_map
-9. Build:
+- If month is not in month_map, skip the row
 
-    year + "-" + month_map[month_name] + "-" + day + " " + hour + ":" + minute
+- Build minute_key using:
+    year + "-" + month_map[month] + "-" + day + " " + hour + ":" + minute
 
-If any part fails, skip the row.
+valid_row = 
+- If any of ip_address, timestamp, method, path, or minute_key is missing or empty, skip the row
 
 ========================================================
-12) VALID ROW DEFINITION
+12) COUNTS TO UPDATE FOR EVERY VALID ROW
 --------------------------------------------------------
-A row is considered valid only after all required parsing succeeds and this final check passes:
-
-- ip_address is truthy
-- timestamp is truthy
-- method is truthy
-- path is truthy
-- minute_key is truthy
-
-Only then should the row affect any counts.
-
-========================================================
-13) COUNTS TO UPDATE FOR EVERY VALID ROW
---------------------------------------------------------
-For each valid row, update these in this order:
+For each valid row, update the following in order:
 
 A) method_counts
-Increment:
-    results["method_counts"][method]
+- Check if method already exists as a key in results["method_counts"]
+- If it does not exist, initialize it to 0
+- Increment the count for that method
 
 B) status_class_counts
-Map status_code as follows:
-- 200–299 -> "2xx"
-- 300–399 -> "3xx"
-- 400–499 -> "4xx"
-- 500–599 -> "5xx"
-- otherwise -> no status bucket update
 
-If the mapped status bucket is valid, increment:
-    results["status_class_counts"][status_class]
+- Based on the value of status_code, assign status_class as follows:
+    - If status_code is between 200 and 299, set status_class to "2xx"
+    - If status_code is between 300 and 399, set status_class to "3xx"
+    - If status_code is between 400 and 499, set status_class to "4xx"
+    - If status_code is between 500 and 599, set status_class to "5xx"
+    - Otherwise, set status_class to None
+
+- Only continue if status_class is not None
+
+- Check if status_class exists in results["status_class_counts"]
+- If it does not exist, initialize it to 0
+- Increment the count for that status_class
 
 C) minute_counts
-Increment:
-    minute_counts[minute_key]
+- Check if minute_key exists in minute_counts
+- If not, initialize it to 0
+- Increment the count for that minute_key
 
-D) path_404_counts
-If status_code == 404:
-increment:
-    path_404_counts[normalized_path]
-
-E) suspicious_ip_counts
-Check every target in suspicious_targets.
-If normalized_path matches by:
-- normalized_path == target
-OR
-- normalized_path.startswith(target + "/")
-then increment:
-    suspicious_ip_counts[ip_address]
-and stop checking additional targets for that row.
-
-F) successful GET tracking
-If method == "GET" and status_code == 200:
-- add bytes_sent to successful_get_bytes_total
-- increment successful_get_count
 
 ========================================================
-14) INITIAL STATE BEFORE FILE LOOP
+13) COUNTS AND FINAL COMPUTATION RULES
 --------------------------------------------------------
-Before reading the file, create:
+After a row has passed parsing and validation, update the remaining tracking values in this order.
 
-A) results exactly as:
+A) 404 path counting
+- Check whether status_code is exactly 404
+- If it is:
+    - Check whether normalized_path already exists in path_404_counts
+    - If it does not exist, initialize it to 0
+    - Increment the count stored for normalized_path by 1
 
-{
-    "method_counts": {},
-    "status_class_counts": {},
-    "top_404_path": None,
-    "suspicious_ips": {},
-    "busiest_minute": None,
-    "average_bytes_sent_by_successful_get": None,
-}
+B) Suspicious path detection
+- Create a flag named is_suspicious and set it to False before checking any targets
+- Loop through suspicious_targets one target at a time
+- For each target, check for either of these matches:
+    - normalized_path is exactly equal to target
+    - normalized_path starts with target + "/"
+- If either match is true:
+    - Set is_suspicious to True
+    - Stop checking additional targets for that row (break)
 
-B) helper state:
-- path_404_counts = {}
-- suspicious_ip_counts = {}
-- minute_counts = {}
-- successful_get_bytes_total = 0
-- successful_get_count = 0
+C) Suspicious IP counting
+- After the target-checking loop, check whether is_suspicious is True
+- If it is:
+    - Check whether ip_address already exists in suspicious_ip_counts
+    - If it does not exist, initialize it to 0
+    - Increment the count stored for ip_address by 1
 
-C) constants:
-- month_map
-- suspicious_targets
+D) Successful GET tracking
+- Check whether method is exactly "GET" and status_code is exactly 200
+- If both conditions are true:
+    - Add bytes_sent to successful_get_bytes_total
+    - Increment successful_get_count by 1
 
-========================================================
-15) FINAL COMPUTATION RULES AFTER THE LOOP
---------------------------------------------------------
-After all lines are processed, compute the remaining output fields in this order:
+E) The closing except block to main file should be here
 
-A) top_404_path
-If path_404_counts is not empty:
-- find the highest count
-- collect all paths with that count
-- assign the lexicographically smallest one to:
-    results["top_404_path"]
+#############################################################################################
+NOTE: This happens outside the main file loop, as part of file handling
 
-Otherwise leave it as None.
+F) Compute top_404_path after the loop
+- This happens after the main file loop has finished
 
-B) suspicious_ips
-Loop through suspicious_ip_counts in normal dictionary iteration order.
-For each IP whose count is >= suspicious_threshold:
-copy it into:
-    results["suspicious_ips"]
+- Check whether path_404_counts is not empty
+- If it is not empty:
+    - Get all count values from path_404_counts and 
+    find the maximum value → store as highest_404_count
+    max(path_404_counts.values())
 
-Do not sort.
+    - Create an empty list named top_404_candidates
 
-C) busiest_minute
-If minute_counts is not empty:
-- find the highest count
-- collect all minute strings with that count
-- assign the earliest one using simple string comparison to:
-    results["busiest_minute"]
+    - Loop through each current_path in path_404_counts
+    - For each current_path:
+        - Check If that current_path in path_404_counts is equal to highest_404_count:
+            - if it is: Append current_path to top_404_candidates
 
-Otherwise leave it as None.
+    - From top_404_candidates, select the smallest value 
+        using standard string comparison .min()
+    - Assign that value to results["top_404_path"]
+    
+G) Compute suspicious_ips after the loop
+- Loop through each ip_address in suspicious_ip_counts
+- If the count for that ip_address is greater than or equal to suspicious_threshold:
+    - Copy that IP and its count into results["suspicious_ips"]
+- Do not sort anything
 
-D) average_bytes_sent_by_successful_get
-If successful_get_count > 0:
-- divide successful_get_bytes_total by successful_get_count
-- round to 2 decimals
-- assign to:
-    results["average_bytes_sent_by_successful_get"]
+H) Compute busiest_minute after the loop
+- This happens after the main file loop has finished
+- Check whether minute_counts is not empty
+- If it is not empty:
+    - Find the highest count in minute_counts.values() and store it in highest_minute_count
+    - Create an empty list named busiest_minute_candidates
+    - Loop through each current_minute in minute_counts
+    - If the count for current_minute is equal to highest_minute_count, 
+      append current_minute to busiest_minute_candidates
+    - After that loop, assign the smallest value in busiest_minute_candidates
+     to results["busiest_minute"]
 
-Otherwise leave it as None.
+I) Compute average_bytes_sent_by_successful_get after the loop
+- This happens after the main file loop has finished
+
+- Check whether successful_get_count is greater than 0
+- If it is:
+    - Divide successful_get_bytes_total by successful_get_count
+    - Store the result in average_bytes
+    - Round average_bytes to 2 decimal places
+    - Assign the rounded value to results["average_bytes_sent_by_successful_get"]
 
 ========================================================
 16) RETURN RULE
 --------------------------------------------------------
-Return results at the end of the function.
+- This happens after the main file loop and after all final computations
+- Return results
 
 ========================================================
 17) EXPECTED RESULT FOR THE PROVIDED nginx.log
 --------------------------------------------------------
-{
-    "method_counts": {
-        "GET": 333,
-        "POST": 27
-    },
-    "status_class_counts": {
-        "2xx": 240,
-        "3xx": 40,
-        "4xx": 60,
-        "5xx": 20
-    },
-    "top_404_path": "/favicon.ico",
-    "suspicious_ips": {
-        "198.51.100.23": 14,
-        "192.0.2.44": 7
-    },
-    "busiest_minute": "2026-04-04 09:28",
-    "average_bytes_sent_by_successful_get": 2643.77
-}
+The final returned dictionary for the provided file should contain:
+- method_counts with GET = 333 and POST = 27
+- status_class_counts with:
+    - "2xx" = 240
+    - "3xx" = 40
+    - "4xx" = 60
+    - "5xx" = 20
+- top_404_path set to "/favicon.ico"
+- suspicious_ips containing:
+    - "198.51.100.23" = 14
+    - "192.0.2.44" = 7
+- busiest_minute set to "2026-04-04 09:28"
+- average_bytes_sent_by_successful_get set to 2643.77
 
 ========================================================
-18) IMPLEMENTATION STYLE EXPECTATION
---------------------------------------------------------
-The final solution should read like a straightforward log parser:
-- define results and helper state
-- define constants
-- open file
-- loop through lines
-- parse using split/find/basic checks
-- validate and skip bad rows
-- update counters
-- compute final summary values
-- return results
+ppprint output:
 
-Do not use shortcuts that hide the logic.
-The intended difficulty is junior-mid level Python / DevOps.
+{'average_bytes_sent_by_successful_get': 2643.77,
+ 'busiest_minute': '2026-04-04 09:28',
+ 'method_counts': {'GET': 333, 'POST': 27},
+ 'status_class_counts': {'2xx': 240, '3xx': 40, '4xx': 60, '5xx': 20},
+ 'suspicious_ips': {'192.0.2.44': 7, '198.51.100.23': 14},
+ 'top_404_path': '/favicon.ico'}
+
+
 """

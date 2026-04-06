@@ -292,10 +292,11 @@ Convert the timestamp into the format: YYYY-MM-DD HH:MM
 
 - If month is not in month_map, skip the row
 
-- Build minute_key using:
-    year + "-" + month_map[month] + "-" + day + " " + hour + ":" + minute
+- Create a variable called minute_key
+- create a f string to create the format: YYYY-MM-DD HH:MM
+f"{year}-{month_map[month]}-{day} {hour}:{minute}"
 
-valid_row = 
+valid_row - use not all((<TUPLE_OF_VALUES_TO_CHECK>))
 - If any of ip_address, timestamp, method, path, or minute_key is missing or empty, skip the row
 
 ========================================================
@@ -361,7 +362,7 @@ C) Suspicious IP counting
 D) Successful GET tracking
 - Check whether method is exactly "GET" and status_code is exactly 200
 - If both conditions are true:
-    - Add bytes_sent to successful_get_bytes_total
+    - Increment bytes_sent to successful_get_bytes_total
     - Increment successful_get_count by 1
 
 E) The closing except block to main file should be here
@@ -449,6 +450,5 @@ ppprint output:
  'status_class_counts': {'2xx': 240, '3xx': 40, '4xx': 60, '5xx': 20},
  'suspicious_ips': {'192.0.2.44': 7, '198.51.100.23': 14},
  'top_404_path': '/favicon.ico'}
-
 
 """

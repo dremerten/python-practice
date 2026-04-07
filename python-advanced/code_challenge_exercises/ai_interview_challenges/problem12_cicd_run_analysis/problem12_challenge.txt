@@ -1,16 +1,14 @@
-CI PIPELINE RUN SUMMARY — DEPLOYMENT HEALTH + IMAGE TAG AUDIT
+PIPELINE RUN ANALYSIS — JSONL PROCESSING
 
 PURPOSE
-Write one function that reads a provided pipeline run JSONL file and returns a fixed summary dictionary.
+Write one function that reads a pipeline_runs.jsonl file and returns a fixed summary dictionary.
 
 This specification is intended to match the provided solution structure and behavior exactly.
 
 CONSTRAINTS
-- Use only basic Python 3 libraries
-- You may import json
-- No third-party packages
-- No regex
-- No helper libraries
+- Only use Python standard library
+- You may use json
+- No external libraries
 - Use dictionaries, loops, if/else, try/except
 - Skip malformed rows safely
 
@@ -19,7 +17,7 @@ CONSTRAINTS
 --------------------------------------------------------
 Implement exactly this function:
 
-    analyze_pipeline_runs(file_path: str, slow_threshold_seconds: int = 900) -> dict
+    analyze_pipeline_runs(file_path: str, failure_threshold: int = 10) -> dict
 
 Do not add extra parameters.
 Do not print anything.
@@ -33,119 +31,27 @@ Return exactly this structure:
 {
     "pipeline_counts": {},
     "status_counts": {},
-    "top_failed_job": None,
-    "slow_pipelines": {},
-    "latest_prod_image_tag": None,
-    "average_duration_seconds_successful_deploys": None,
+    "top_failed_pipeline": None,
+    "frequent_failure_pipelines": {},
+    "busiest_minute": None,
+    "average_duration_success": None,
 }
 
-These six keys must always exist in the returned dictionary, even if the file is missing or all rows are invalid.
+These six keys must always exist in the returned dictionary,
+even if the file is missing or all rows are invalid.
 
 ========================================================
-3) MEANING OF EACH RETURN FIELD
+3) HELPER STATE INITIALIZATION
 --------------------------------------------------------
-Use helper state for the computations that feed the final result.
-
 Initialize the following:
 
-- failed_job_counts -> dict[str, int]
-- slow_pipeline_counts -> dict[str, int]
-- latest_prod_timestamp -> None
-- latest_prod_image -> None
-- successful_deploy_duration_total -> int
-- successful_deploy_count -> int
-
-    failed_job_counts = {}
-    slow_pipeline_counts = {}
-    latest_prod_timestamp = None
-    latest_prod_image = None
-    successful_deploy_duration_total = 0
-    successful_deploy_count = 0
+pipeline_failure_counts = {}
+minute_counts = {}
+success_duration_total = 0
+success_count = 0
 
 ========================================================
-4) INPUT FILE FORMAT - NO CODE
---------------------------------------------------------
-Each line in pipeline_runs.jsonl is one JSON object.
-
-Example shape:
-
-{
-  "timestamp": "2026-04-05T10:15:00Z",
-  "pipeline": "web",
-  "job_name": "deploy",
-  "status": "success",
-  "duration_seconds": 840,
-  "image": "registry.example.com/web:2.3.1",
-  "environment": "prod"
-}
-
-The solution parses only the parts it needs:
-- timestamp
-- pipeline
-- job_name
-- status
-- duration_seconds
-- image
-- environment
-
-========================================================
-5) REQUIRED VARIABLE NAMES - NO CODE
---------------------------------------------------------
-Use these names in the solution:
-
-Final result:
-- results
-
-Helper state:
-- failed_job_counts
-- slow_pipeline_counts
-- latest_prod_timestamp
-- latest_prod_image
-- successful_deploy_duration_total
-- successful_deploy_count
-
-Per-line variables:
-- line
-- record
-- timestamp
-- pipeline
-- job_name
-- status
-- duration_seconds
-- image
-- environment
-- image_tag
-
-You may also use temporary names such as:
-- required_keys
-- missing_required_value
-- failed_job_name
-- current_pipeline
-
-========================================================
-6) REQUIRED DEFINITIONS
---------------------------------------------------------
-Define required_keys as this exact tuple:
-
-    (
-        "timestamp",
-        "pipeline",
-        "job_name",
-        "status",
-        "duration_seconds",
-        "image",
-        "environment",
-    )
-
-A row is considered a deploy row only when:
-- job_name is exactly "deploy"
-
-A row is considered a successful deploy only when:
-- job_name is exactly "deploy"
-- status is exactly "success"
-
-========================================================
-7) FILE HANDLING RULE
+4) FILE HANDLING RULE
 --------------------------------------------------------
 Open the file using a context manager inside a try block.
 
@@ -155,7 +61,7 @@ return the empty results structure immediately.
 Do not raise the error further.
 
 ========================================================
-8) LINE PROCESSING RULES
+5) LINE PROCESSING RULES
 --------------------------------------------------------
 Process the file line by line.
 
@@ -164,170 +70,157 @@ For each line:
 2. Skip it if it becomes empty
 
 Then:
-- Use a try block with json.loads(line)
-- Store the parsed value in record
-- If json.loads raises ValueError, skip the row
-- If record is not a dictionary, skip the row
+- Use a try block to call json.loads(line)
+- Store the parsed result in data
+- If json.loads raises a ValueError:
+    - skip the row using continue
 
 ========================================================
-9) REQUIRED FIELD VALIDATION
+6) REQUIRED FIELD VALIDATION
 --------------------------------------------------------
 For each parsed record:
 
-A) Confirm all required_keys exist
-- If any required key is missing, skip the row
-
-B) Read the values into:
-- timestamp
+A) Read values into:
 - pipeline
-- job_name
 - status
-- duration_seconds
-- image
-- environment
-
-C) Missing or empty value rule
-Create a flag named missing_required_value and set it to False.
-Check each of:
+- duration
 - timestamp
-- pipeline
-- job_name
-- status
-- image
-- environment
 
-If any of those values is missing or empty:
-- set missing_required_value to True
+B) Required value check
+- If any of pipeline, status, or timestamp is missing or empty,
+  skip the row immediately
 
-If missing_required_value is True:
-- skip the row
+C) Count updates happen before timestamp parsing
+After the required value check passes:
 
-D) duration_seconds conversion rule
-Use a try block to convert duration_seconds to int
-If conversion raises ValueError or TypeError:
-- skip the row
+1. Update results["pipeline_counts"]
+- If pipeline is not already a key, initialize it to 0
+- Increment the count for pipeline
 
-========================================================
-10) COUNTS TO UPDATE FOR EVERY VALID ROW
---------------------------------------------------------
-For each valid row, update the following in order:
+2. Update results["status_counts"]
+- If status is not already a key, initialize it to 0
+- Increment the count for status
 
-A) pipeline_counts
-- Check if pipeline already exists as a key in results["pipeline_counts"]
-- If it does not exist, initialize it to 0
-- Increment the count for that pipeline
+D) Timestamp validation for minute tracking
+- Check whether "T" is in timestamp
+- If not, skip the row
 
-B) status_counts
-- Check if status already exists as a key in results["status_counts"]
-- If it does not exist, initialize it to 0
-- Increment the count for that status
+- Split timestamp into date_part and time_part using "T"
+- Check whether ":" is in time_part
+- If not, skip the row
 
-========================================================
-11) REMAINING TRACKING RULES
---------------------------------------------------------
-After a row has passed parsing and validation, update the remaining tracking values in this order.
+- Split time_part by ":" and store the result in time_parts
+- If time_parts has fewer than 2 elements, skip the row
 
-A) Failed job counting
+- From time_parts:
+    - first value → hour
+    - second value → minute
+- Create minute_key as a string in this format:
+
+    YYYY-MM-DD HH:MM
+
+- Use date_part directly when building minute_key
+
+E) Minute count update
+- If minute_key is not already a key in minute_counts, initialize it to 0
+- Increment the count for minute_key
+
+F) Failure tracking
 - Check whether status is exactly "failed"
 - If it is:
-    - Check whether job_name already exists in failed_job_counts
-    - If it does not exist, initialize it to 0
-    - Increment the count stored for job_name by 1
+    - If pipeline is not already a key in pipeline_failure_counts,
+      initialize it to 0
+    - Increment the count for pipeline
 
-B) Slow pipeline counting
-- Check whether duration_seconds is greater than or equal to slow_threshold_seconds
+G) Success duration tracking
+- Check whether status is exactly "success"
 - If it is:
-    - Check whether pipeline already exists in slow_pipeline_counts
-    - If it does not exist, initialize it to 0
-    - Increment the count stored for pipeline by 1
-
-C) Latest successful production deploy image
-- Check whether all of the following are true:
-    - environment is exactly "prod"
-    - job_name is exactly "deploy"
-    - status is exactly "success"
-- If all are true:
-    - If latest_prod_timestamp is None, replace both latest_prod_timestamp and latest_prod_image
-    - Otherwise compare timestamp to latest_prod_timestamp using normal string comparison
-    - If timestamp is greater than latest_prod_timestamp:
-        - replace latest_prod_timestamp and latest_prod_image
-
-D) Successful deploy duration tracking
-- Check whether job_name is exactly "deploy" and status is exactly "success"
-- If both conditions are true:
-    - Add duration_seconds to successful_deploy_duration_total
-    - Increment successful_deploy_count by 1
+    - Check whether duration is an int or float
+    - Only if it is an int or float:
+        - add duration to success_duration_total
+        - increment success_count
 
 ========================================================
-12) FINAL COMPUTATION RULES
+7) FINAL COMPUTATION RULES
 --------------------------------------------------------
 These happen after the main file loop has finished.
+These do not happen inside the main file for loop.
 
-A) Compute top_failed_job
-- Check whether failed_job_counts is not empty
+A) Compute top_failed_pipeline
+- Check whether pipeline_failure_counts is not empty
 - If it is not empty:
-    - Find the highest count value in failed_job_counts and store it in highest_failed_count
-    - Create an empty list named top_failed_job_candidates
-    - Loop through each failed_job_name in failed_job_counts
-    - If the count for failed_job_name is equal to highest_failed_count:
-        - append failed_job_name to top_failed_job_candidates
-    - Assign the smallest value in top_failed_job_candidates
-      using standard string comparison to results["top_failed_job"]
+    - Find the highest count value in pipeline_failure_counts.values()
+      and store it in highest_failure_count
+    - Create an empty list named failure_candidates
+    - Loop through each pipeline_name in pipeline_failure_counts
+    - If the count for pipeline_name is equal to highest_failure_count:
+        - append pipeline_name to failure_candidates
+    - Assign the smallest value in failure_candidates
+      using standard string comparison to results["top_failed_pipeline"]
 
-B) Compute slow_pipelines
-- Loop through each current_pipeline in slow_pipeline_counts
-- If the count for current_pipeline is greater than 0:
-    - copy that pipeline and its count into results["slow_pipelines"]
+B) Compute frequent_failure_pipelines
+- Loop through each pipeline_name in pipeline_failure_counts
+- If the count for pipeline_name is greater than or equal to failure_threshold:
+    - copy that pipeline and its count into
+      results["frequent_failure_pipelines"]
 - Do not sort anything
 
-C) Compute latest_prod_image_tag
-- Check whether latest_prod_image is not None
-- If it is not None:
-    - Find the position of the last ":" character in latest_prod_image
-    - If the last ":" exists:
-        - create image_tag from everything after the last ":"
-        - assign image_tag to results["latest_prod_image_tag"]
+C) Compute busiest_minute
+- Check whether minute_counts is not empty
+- If it is not empty:
+    - Find the highest count value in minute_counts.values()
+      and store it in highest_minute_count
 
-D) Compute average_duration_seconds_successful_deploys
-- Check whether successful_deploy_count is greater than 0
+    - Create an empty list named minute_candidates
+    - Loop through each current_minute in minute_counts
+    - If the count for current_minute is equal to highest_minute_count:
+        - append current_minute to minute_candidates
+    - Assign the smallest value (min()) in minute_candidates
+      using standard string comparison to results["busiest_minute"]
+
+D) Compute average_duration_success
+- Check whether success_count is greater than 0
 - If it is:
-    - Divide successful_deploy_duration_total by successful_deploy_count
+    - Divide success_duration_total by success_count
     - Store the result in average_duration
     - Round average_duration to 2 decimal places
-    - Assign the rounded value to results["average_duration_seconds_successful_deploys"]
+    - Assign the rounded value to results["average_duration_success"]
 
 ========================================================
-13) RETURN RULE
+8) RETURN RULE
 --------------------------------------------------------
-- This happens after the main file loop and after all final computations
-- Return results
+This happens after the main file loop and after all final computations.
+Return results.
 
 ========================================================
-14) EXPECTED RESULT FOR THE PROVIDED pipeline_runs.jsonl
+9) EXPECTED RESULT FOR PROVIDED FILE
 --------------------------------------------------------
-The final returned dictionary for the provided file should contain:
-- pipeline_counts with:
-    - "api" = 6
-    - "web" = 5
-    - "worker" = 4
-- status_counts with:
-    - "success" = 9
-    - "failed" = 5
-    - "cancelled" = 1
-- top_failed_job set to "test"
-- slow_pipelines containing:
-    - "web" = 2
-    - "api" = 1
-    - "worker" = 1
-- latest_prod_image_tag set to "0.9.5"
-- average_duration_seconds_successful_deploys set to 800.0
+{
+    "pipeline_counts": {
+        "build": 119,
+        "test": 102,
+        "deploy": 79
+    },
+    "status_counts": {
+        "failed": 54,
+        "running": 30,
+        "success": 216
+    },
+    "top_failed_pipeline": "deploy",
+    "frequent_failure_pipelines": {
+        "build": 13,
+        "test": 19,
+        "deploy": 22
+    },
+    "busiest_minute": "2026-04-04 09:28",
+    "average_duration_success": 321.0
+}
 
-========================================================
-pprint output:
+pprint:
 
-{'average_duration_seconds_successful_deploys': 800.0,
- 'latest_prod_image_tag': '0.9.5',
- 'pipeline_counts': {'api': 6, 'web': 5, 'worker': 4},
- 'slow_pipelines': {'api': 1, 'web': 2, 'worker': 1},
- 'status_counts': {'cancelled': 1, 'failed': 5, 'success': 9},
- 'top_failed_job': 'test'}
+{'average_duration_success': 321.0,
+ 'busiest_minute': '2026-04-04 09:28',
+ 'frequent_failure_pipelines': {'build': 13, 'deploy': 22, 'test': 19},
+ 'pipeline_counts': {'build': 119, 'deploy': 79, 'test': 102},
+ 'status_counts': {'failed': 54, 'running': 30, 'success': 216},
+ 'top_failed_pipeline': 'deploy'}

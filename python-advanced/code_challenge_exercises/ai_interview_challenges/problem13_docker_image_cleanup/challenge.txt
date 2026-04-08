@@ -1,0 +1,281 @@
+DOCKER IMAGE CLEANUP ANALYSIS — JSONL + TEXT INVENTORY
+
+PURPOSE
+Write one function that reads a docker image inventory file and a running image ID file,
+then returns a fixed summary dictionary.
+
+This specification is intended to match the provided solution structure and behavior exactly.
+
+CONSTRAINTS
+- Only use Python standard library
+- You may use json
+- No external libraries
+- No regex
+- Use dictionaries, loops, if/else, try/except
+- Skip malformed rows safely
+- Do not print anything inside the function
+
+========================================================
+SUMMARY
+--------------------------------------------------------
+Input Files:
+
+1) docker_images.jsonl
+Each non-empty line is a JSON object.
+
+Example:
+{
+  "image_id": "sha256:aaa111",
+  "repository": "web",
+  "tag": "latest",
+  "size_mb": 320,
+  "created_at": "2026-03-30T09:00:00",
+  "age_days": 8
+}
+
+Fields used:
+- image_id
+- repository
+- tag
+- size_mb
+- created_at
+- age_days
+
+2) running_image_ids.txt
+Each non-empty line contains one image ID:
+
+sha256:aaa111
+
+--------------------------------------------------------
+Required Variable Names:
+
+Final result:
+- results
+
+Helper state:
+- in_use_image_ids
+- unused_image_sizes
+- unused_created_at_values
+- unused_size_total
+- unused_size_count
+
+Per-line variables:
+- line
+- data
+- image_id
+- repository
+- tag
+- size_mb
+- created_at
+- age_days
+- tag_state
+
+Temporary variables:
+- largest_size_mb
+- largest_image_candidates
+- image_id_value
+- average_size_mb
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+Implement exactly this function:
+
+    analyze_docker_images(images_file_path: str, running_image_ids_path: str, stale_threshold_days: int = 30) -> dict
+
+Do not add extra parameters.
+Return one dictionary.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+Return exactly this structure:
+
+{
+    "repository_counts": {},
+    "tag_state_counts": {},
+    "largest_unused_image": None,
+    "cleanup_candidates": {},
+    "oldest_unused_created_at": None,
+    "average_size_mb_unused": None,
+}
+
+These six keys must always exist in the returned dictionary,
+even if one or both files are missing or all rows are invalid.
+
+========================================================
+3) HELPER STATE INITIALIZATION
+--------------------------------------------------------
+Initialize the following:
+
+in_use_image_ids = set()
+unused_image_sizes = {}
+unused_created_at_values = []
+unused_size_total = 0
+unused_size_count = 0
+
+========================================================
+4) FILE HANDLING RULES
+--------------------------------------------------------
+Use one outer try block for both files.
+
+A) running_image_ids.txt handling
+- Open running_image_ids_path using a context manager
+- Loop through the file line by line
+- For each line:
+    - strip whitespace
+    - if the line is empty, skip it using continue
+    - otherwise add the line to in_use_image_ids
+
+B) docker_images.jsonl handling
+- After the first file finishes, open images_file_path using a context manager
+- Loop through the file line by line
+
+C) For each line:
+    1. Strip whitespace
+    2. If the line is empty, skip it using continue
+
+    3. Use a try block to call json.loads(line)
+    4. Store the parsed result in data
+    5. If json.loads(line) raises ValueError:
+        - skip the row using continue
+
+If FileNotFoundError happens while opening either file:
+- return results immediately
+
+Do not raise the error further.
+
+========================================================
+5) REQUIRED FIELD VALIDATION
+--------------------------------------------------------
+For each parsed record:
+
+A) Read values into:
+- image_id
+- repository
+- tag
+- size_mb
+- created_at
+- age_days
+
+B) Required value check
+- If any of image_id, repository, tag, or created_at is missing or empty,
+  skip the row immediately
+
+C) Count updates happen before unused-image checks
+
+1. Update results["repository_counts"]
+- If repository is not already a key, initialize it to 0
+- Increment the count for repository
+
+2. Determine tag_state
+- If tag is exactly "latest", set tag_state to "latest"
+- Else if tag is exactly "<none>", set tag_state to "dangling"
+- Otherwise set tag_state to "versioned"
+
+3. Update results["tag_state_counts"]
+- If tag_state is not already a key, initialize it to 0
+- Increment the count for tag_state
+
+========================================================
+6) UNUSED IMAGE TRACKING RULES
+--------------------------------------------------------
+After the row has passed parsing and validation, check whether image_id is not in in_use_image_ids.
+
+Only if image_id is not in in_use_image_ids, do the following in this order:
+
+A) Unused size tracking
+- Check whether size_mb is an int or float
+- If it is:
+    - Store size_mb in unused_image_sizes using image_id as the key
+    - Add size_mb to unused_size_total
+    - Increment unused_size_count by 1
+
+B) Unused created_at tracking
+- Append created_at to unused_created_at_values
+
+C) Cleanup candidate tracking
+- A row is a cleanup candidate when either of these is true:
+    - tag is exactly "<none>"
+    - age_days is an int and age_days is greater than or equal to stale_threshold_days
+
+- If the row is a cleanup candidate:
+    - Check whether size_mb is an int or float
+    - If it is:
+        - set image_id in results["cleanup_candidates"] equal to size_mb
+
+========================================================
+7) FINAL COMPUTATION RULES
+--------------------------------------------------------
+These happen after the main file loop has finished.
+These do not happen inside the main file for loop.
+
+A) Compute largest_unused_image
+- Check whether unused_image_sizes is not empty
+- If it is not empty:
+    - Find the highest size value in unused_image_sizes.values()
+      and store it in largest_size_mb
+
+    - Create an empty list named largest_image_candidates
+    - Loop through each image_id_value in unused_image_sizes
+    - If the size for image_id_value is equal to largest_size_mb:
+        - append image_id_value to largest_image_candidates
+    - Assign the smallest value in largest_image_candidates
+      using standard string comparison to results["largest_unused_image"]
+
+B) Compute oldest_unused_created_at
+- Check whether unused_created_at_values is not empty
+- If it is not empty:
+    - Assign the smallest value (min()) in unused_created_at_values
+      to results["oldest_unused_created_at"]
+    - optional sort
+
+C) Compute average_size_mb_unused
+- Check whether unused_size_count is greater than 0
+- If it is:
+    - Divide unused_size_total by unused_size_count
+    - Store the result in average_size_mb
+    - Round average_size_mb to 2 decimal places
+    - Assign the rounded value to results["average_size_mb_unused"]
+
+========================================================
+8) RETURN RULE
+--------------------------------------------------------
+This happens after the main file loop and after all final computations.
+Return results.
+
+========================================================
+9) EXPECTED RESULT FOR THE PROVIDED FILES
+--------------------------------------------------------
+{
+    "repository_counts": {
+        "web": 3,
+        "api": 3,
+        "worker": 3,
+        "nginx": 2,
+        "redis": 2,
+        "cron": 2,
+        "metrics": 1,
+        "sidecar": 2
+    },
+    "tag_state_counts": {
+        "latest": 6,
+        "versioned": 8,
+        "dangling": 4
+    },
+    "largest_unused_image": "sha256:ggg111",
+    "cleanup_candidates": {
+        "sha256:aaa333": 318,
+        "sha256:bbb333": 399,
+        "sha256:ccc222": 288,
+        "sha256:ccc333": 286,
+        "sha256:ddd111": 142,
+        "sha256:eee111": 98,
+        "sha256:eee222": 97,
+        "sha256:fff111": 180,
+        "sha256:ggg111": 610,
+        "sha256:hhh222": 74
+    },
+    "oldest_unused_created_at": "2025-12-15T06:00:00",
+    "average_size_mb_unused": 255.18
+}

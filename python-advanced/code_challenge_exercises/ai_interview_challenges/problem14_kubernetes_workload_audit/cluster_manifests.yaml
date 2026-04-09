@@ -1,0 +1,128 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: prod
+spec:
+  replicas: 3
+  template:
+    spec:
+      nodeSelector:
+        workload: backend
+        zone: us-central1-a
+      containers:
+        - name: api
+          image: registry.example.com/platform/payments-api:1.4.2
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          env:
+            - name: APP_ENV
+              value: production
+            - name: LOG_LEVEL
+              value: info
+        - name: sidecar-metrics
+          image: observability/metrics-sidecar:2.1
+          resources:
+            requests:
+              cpu: "0.1"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          env:
+            - name: SCRAPE_PORT
+              value: "9090"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-worker
+  namespace: prod
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: worker
+          image: registry.example.com/ops/inventory-worker:5.0.0
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "512Mi"
+          env:
+            - name: APP_ENV
+              value: production
+            - name: QUEUE_NAME
+              value: inventory-jobs
+---
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: payments-api
+  namespace: prod
+spec:
+  selector:
+    app: payments-api
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-shipper
+spec:
+  replicas: 1
+  template:
+    spec:
+      nodeSelector:
+        workload: platform
+      containers:
+        - name: shipper
+          image: logging/log-shipper:latest
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "128Mi"
+            limits: {}
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: DESTINATION
+              value: elasticsearch
+        - name: config-reloader
+          image: infra/config-reloader:1.0.1
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          env:
+            - name: WATCH_PATH
+              value: /etc/config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-deployment
+  namespace: dev
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - not_a_mapping
+        - name: bad-container
+          image: ""
+          resources: not-a-dict
+          env: bad-env
+---
+this is not valid yaml structure for a kubernetes document list item

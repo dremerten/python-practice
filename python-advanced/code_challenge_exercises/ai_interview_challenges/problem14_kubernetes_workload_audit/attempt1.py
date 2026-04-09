@@ -42,12 +42,15 @@ def analyze_cluster_manifests(manifest_file_path: str) -> dict:
                     continue
 
                 deployment_name = metadata.get("name")
-                namespace = metadata.get("namespace", "default")
+                namespace = metadata.get("namespace")
                 replicas = spec.get("replicas")
                 template = spec.get("template")
-                pod_spec = template.get("spec")
+
                 if not deployment_name:
                     continue
+
+                if not namespace:
+                    namespace = "default"
 
                 results["deployment_count"] += 1
                 namespace_counts[namespace] = namespace_counts.get(namespace, 0) + 1
@@ -55,6 +58,7 @@ def analyze_cluster_manifests(manifest_file_path: str) -> dict:
                 if not isinstance(template, dict):
                     continue
 
+                pod_spec = template.get("spec")
                 if not isinstance(pod_spec, dict):
                     continue
 
@@ -114,10 +118,13 @@ def analyze_cluster_manifests(manifest_file_path: str) -> dict:
                     
                     if not isinstance(env, list):
                         env = []
-                    
+
                     for env_item in env:
-                        if isinstance(env_item, dict):
-                            env_name = env_item.get("name")
+                        if not isinstance(env_item, dict):
+                            continue
+
+                        env_name = env_item.get("name")
+                        if isinstance(env_name, str) and env_name:
                             env_name_counts[env_name] = env_name_counts.get(env_name, 0) + 1
     
 

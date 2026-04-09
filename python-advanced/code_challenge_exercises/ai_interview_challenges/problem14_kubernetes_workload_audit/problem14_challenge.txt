@@ -1,0 +1,372 @@
+KUBERNETES WORKLOAD AUDIT — YAML MANIFEST PARSING + SUMMARY EXTRACTION
+
+PURPOSE
+Write one function that reads a Kubernetes-style YAML manifest file containing multiple documents,
+then returns a fixed summary dictionary.
+
+The goal is to assess careful file handling, nested data extraction, defensive parsing,
+and clear business-rule implementation.
+
+CONSTRAINTS
+- Use Python standard library and yaml
+- No external libraries beyond yaml
+- No regex
+- Use dictionaries, lists, loops, if/else, try/except
+- Skip malformed documents safely
+- Do not print anything inside the function
+- Keep the logic straightforward and readable
+
+========================================================
+SUMMARY
+--------------------------------------------------------
+Input File:
+
+1) cluster_manifests.yaml
+The file contains one or more YAML documents separated in standard YAML document format.
+Each valid document represents one Kubernetes-style resource.
+
+The function must inspect only documents where:
+- kind is exactly "Deployment"
+
+For each valid Deployment document, fields may appear in nested structures such as:
+- metadata.name
+- metadata.namespace
+- spec.replicas
+- spec.template.spec.containers
+- spec.template.spec.nodeSelector
+
+Each container entry may include:
+- name
+- image
+- resources.requests.cpu
+- resources.requests.memory
+- env
+
+Environment variables may be written as a list of mappings.
+Some entries may contain:
+- name
+- value
+
+--------------------------------------------------------
+Required Variable Names:
+
+Final result:
+- results
+
+Helper state:
+- namespace_counts
+- image_repository_counts
+- deployment_container_counts
+- deployments_missing_limits
+- cpu_request_totals
+- cpu_request_count
+- env_name_counts
+
+Per-document variables:
+- data
+- kind
+- metadata
+- spec
+- deployment_name
+- namespace
+- replicas
+- template
+- pod_spec
+- containers
+- node_selector
+
+Per-container variables:
+- container
+- container_name
+- image
+- resources
+- requests
+- limits
+- env
+- repository
+- cpu_request
+- env_item
+- env_name
+
+Temporary variables:
+- max_container_count
+- largest_deployment_candidates
+- deployment_name_value
+- average_cpu_request
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+Implement exactly this function:
+
+    analyze_cluster_manifests(manifest_file_path: str) -> dict
+
+Do not add extra parameters.
+Return one dictionary.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+Return exactly this structure:
+
+{
+    "deployment_count": 0,
+    "namespace_counts": {},
+    "image_repository_counts": {},
+    "largest_deployment_by_container_count": None,
+    "deployments_missing_limits": [],
+    "deployments_with_node_selector": {},
+    "env_name_counts": {},
+    "average_cpu_request_millicores": None,
+}
+
+These eight keys must always exist in the returned dictionary,
+even if the file is missing, empty, or all documents are invalid.
+
+========================================================
+3) HELPER STATE INITIALIZATION
+--------------------------------------------------------
+Initialize the following:
+
+namespace_counts = {}
+image_repository_counts = {}
+deployment_container_counts = {}
+deployments_missing_limits = []
+cpu_request_totals = 0
+cpu_request_count = 0
+env_name_counts = {}
+
+========================================================
+4) FILE HANDLING RULES
+--------------------------------------------------------
+Use one outer try block for the file.
+
+A) Manifest file handling
+- Open manifest_file_path using a context manager
+- Use yaml.safe_load_all to read all YAML documents
+- Loop through the loaded documents one by one
+
+B) Per-document handling
+- If a document is None, skip it using continue
+- If a document is not a dictionary, skip it using continue
+
+C) Malformed YAML handling
+- If yaml.safe_load_all raises yaml.YAMLError:
+    - return results immediately
+
+If FileNotFoundError happens while opening the file:
+- return results immediately
+
+Do not raise the error further.
+
+========================================================
+5) DOCUMENT VALIDATION RULES
+--------------------------------------------------------
+For each parsed document:
+
+A) Read values into:
+- kind
+- metadata
+- spec
+
+B) Required structure checks
+- If kind is not exactly "Deployment", skip the document immediately
+- If metadata is not a dictionary, skip the document immediately
+- If spec is not a dictionary, skip the document immediately
+
+C) Read deployment values into:
+- deployment_name from metadata.name
+- namespace from metadata.namespace
+- replicas from spec.replicas
+- template from spec.template
+
+D) Required value checks
+- If deployment_name is missing or empty, skip the document immediately
+- If namespace is missing or empty, use "default"
+
+Count updates happen before container parsing rules
+
+1. Increment results["deployment_count"] by 1
+
+2. Update namespace_counts and results["namespace_counts"]
+- If namespace is not already a key, initialize it to 0
+- Increment the count for namespace
+
+========================================================
+6) NESTED POD SPEC EXTRACTION RULES
+--------------------------------------------------------
+After the document passes validation:
+
+A) Read pod template structure
+- template must be a dictionary or the document is skipped 
+from all remaining deployment processing
+- Read pod_spec from template.spec
+- pod_spec must be a dictionary or the document is skipped 
+from all remaining deployment processing
+
+B) Read containers
+- Read containers from pod_spec.containers
+- containers must be a list or treat it as an empty list
+
+C) Track deployments_with_node_selector
+- Read node_selector from pod_spec.nodeSelector
+- If node_selector is a dictionary and it is not empty:
+    - set results["deployments_with_node_selector"][deployment_name] equal to node_selector
+
+D) Track deployment_container_counts
+- Initialize deployment_container_counts[deployment_name] to 0
+- Loop through containers
+- For each entry in containers:
+    - If the entry is a dictionary:
+        - Increment deployment_container_counts[deployment_name] by 1
+
+========================================================
+7) CONTAINER PARSING RULES
+--------------------------------------------------------
+Loop through containers again for parsing.
+
+Only process entries where container is a dictionary.
+
+For each valid container:
+
+A) Read values into:
+- container_name
+- image
+- resources
+- env
+
+B) Image repository extraction
+- Check if image is a string AND if image is not empty
+    - Use rsplit on image with "/" and a maximum of 1 split, 
+    then take the last element from the result and assign it to repository
+    - Reassign repository to the result of calling split on repository using ":" 
+    with a maximum of 1 split, and take the first element
+
+    - If repository is not empty:
+        - If repository is not already a key in image_repository_counts, initialize it to 0
+        - Increment the count for repository
+
+C) Resources handling
+- If resources is not a dictionary, treat it as an empty dictionary
+- Read requests from resources.requests
+- Read limits from resources.limits
+- If requests is not a dictionary, treat it as an empty dictionary
+- If limits is not a dictionary, treat it as an empty dictionary
+
+D) Missing limits tracking
+- A deployment is considered missing limits when at least one valid container dictionary
+  has an empty limits mapping
+- If limits is empty and deployment_name is not already in deployments_missing_limits:
+    - append deployment_name to deployments_missing_limits
+
+E) CPU request tracking
+- Read cpu_request from requests.cpu
+- Check if cpu_request is a string AND if cpu_request is not empty
+    - Attempt conversion inside a try block
+
+    - If cpu_request ends with "m":
+        - Remove the last character from cpu_request
+        - Convert the remaining value to an integer
+        - Reassign the result back to cpu_request
+
+    - Otherwise:
+        - Convert cpu_request to a float
+        - Multiply the result by 1000
+        - Reassign the result back to cpu_request
+
+    - Assign cpu_request to cpu_request_totals
+    - Increment cpu_request_count by 1
+
+    - If a ValueError or TypeError occurs:
+        - Skip using pass
+
+F) Environment variable tracking
+- If env is not a list, treat it as an empty list
+- Loop through env
+- Only process entries where env_item is a dictionary
+- Read env_name from env_item.name
+- If env_name is a non-empty string:
+    - If env_name is not already a key in env_name_counts, initialize it to 0
+    - Increment the count for env_name
+
+========================================================
+8) FINAL COMPUTATION RULES
+--------------------------------------------------------
+These happen after the main document loop has finished.
+These do not happen inside the document loop.
+
+A) Compute largest_deployment_by_container_count
+- Check whether deployment_container_counts is not empty
+- If it is not empty:
+    - Find the highest container count value and store it in max_container_count
+    - Create an empty list named largest_deployment_candidates
+    - Loop through each deployment_name_value in deployment_container_counts
+    - If the count for deployment_name_value is equal to max_container_count:
+        - append deployment_name_value to largest_deployment_candidates
+    - Assign the smallest value in largest_deployment_candidates
+      using standard string comparison to results["largest_deployment_by_container_count"]
+
+B) Final missing limits list handling
+- Sort deployments_missing_limits using standard ascending string order
+- Assign that sorted list to results["deployments_missing_limits"]
+
+C) Final namespace and image counts
+- Assign namespace_counts to results["namespace_counts"]
+- Assign image_repository_counts to results["image_repository_counts"]
+- Assign env_name_counts to results["env_name_counts"]
+
+D) Compute average_cpu_request_millicores
+- Check whether cpu_request_count is greater than 0
+- If it is:
+    - Divide cpu_request_totals by cpu_request_count
+    - Store the result in average_cpu_request
+    - Round average_cpu_request to 2 decimal places
+    - Assign the rounded value to results["average_cpu_request_millicores"]
+
+========================================================
+9) RETURN RULE
+--------------------------------------------------------
+This happens after the main document loop and after all final computations.
+Return results.
+
+Expected Results:
+
+{
+    "deployment_count": 4,
+    "namespace_counts": {
+        "prod": 2,
+        "default": 1,
+        "dev": 1
+    },
+    "image_repository_counts": {
+        "payments-api": 1,
+        "metrics-sidecar": 1,
+        "inventory-worker": 1,
+        "log-shipper": 1,
+        "config-reloader": 1
+    },
+    "largest_deployment_by_container_count": "log-shipper",
+    "deployments_missing_limits": [
+        "bad-deployment",
+        "inventory-worker",
+        "log-shipper"
+    ],
+    "deployments_with_node_selector": {
+        "payments-api": {
+            "workload": "backend",
+            "zone": "us-central1-a"
+        },
+        "log-shipper": {
+            "workload": "platform"
+        }
+    },
+    "env_name_counts": {
+        "APP_ENV": 2,
+        "LOG_LEVEL": 2,
+        "SCRAPE_PORT": 1,
+        "QUEUE_NAME": 1,
+        "DESTINATION": 1,
+        "WATCH_PATH": 1
+    },
+    "average_cpu_request_millicores": 170.0
+}

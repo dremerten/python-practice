@@ -1,0 +1,308 @@
+NGINX ACCESS LOG AUDIT — PARSING + SUMMARY EXTRACTION
+
+PURPOSE
+Write one function that reads an nginx-style access log file,
+then returns a fixed summary dictionary.
+
+The goal is to assess careful file handling, string parsing,
+count aggregation, defensive processing, and clear rule implementation.
+
+CONSTRAINTS
+- Use Python standard library only
+- No external libraries
+- No regex
+- Use dictionaries, lists, loops, if/else, and try/except
+- Skip malformed lines safely
+- Do not print anything inside the function
+- Keep the logic straightforward and readable
+
+========================================================
+SUMMARY
+--------------------------------------------------------
+Input File:
+
+1) nginx_access.log
+The file contains one request per line in a standard combined-log-style layout.
+
+Each valid line follows this general shape:
+
+ip_address - - [timestamp] "METHOD path protocol" status_code response_bytes "-" "user_agent"
+
+Example:
+127.0.0.1 - - [10/Oct/2025:13:55:00 +0000] "GET /health HTTP/1.1" 500 155 "-" "kube-probe/1.20"
+
+--------------------------------------------------------
+Required Variable Names:
+
+Final result:
+- results
+
+Helper state:
+- method_counts
+- status_counts
+- path_counts
+- ip_counts
+- user_agent_counts
+- error_request_count
+- total_response_bytes
+- line_count
+- minute_counts
+
+Per-line variables:
+- line
+- parts
+- prefix
+- request
+- middle
+- ip_address
+- timestamp
+- method
+- path
+- protocol
+- status_code
+- response_bytes
+- user_agent
+
+Temporary variables:
+- most_requested_path_candidates
+- top_ip_candidates
+- busiest_minute_candidates
+- average_response_bytes
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+Implement exactly this function:
+
+    analyze_nginx_access_log(log_file_path: str) -> dict
+
+Do not add extra parameters.
+Return one dictionary.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+Return exactly this structure:
+
+{
+    "line_count": 0,
+    "unique_ip_count": 0,
+    "method_counts": {},
+    "status_counts": {},
+    "most_requested_path": None,
+    "top_ip_address": None,
+    "error_request_count": 0,
+    "user_agent_counts": {},
+    "largest_response": {
+        "bytes": None,
+        "path": None,
+        "ip_address": None
+    },
+    "average_response_bytes": None,
+    "busiest_minute": None
+}
+
+These keys must always exist in the returned dictionary,
+even if the file is missing, empty, or all lines are invalid.
+
+========================================================
+3) HELPER STATE INITIALIZATION
+--------------------------------------------------------
+Initialize the following:
+
+method_counts = {}
+status_counts = {}
+path_counts = {}
+ip_counts = {}
+user_agent_counts = {}
+error_request_count = 0
+total_response_bytes = 0
+line_count = 0
+minute_counts = {}
+
+========================================================
+4) FILE HANDLING RULES
+--------------------------------------------------------
+Use one outer try block for the file.
+
+A) Log file handling
+- Open log_file_path using a context manager
+- Loop through the file one line at a time
+
+B) Missing file handling
+- If FileNotFoundError happens while opening the file:
+    - return results immediately
+
+Do not raise the error further.
+
+========================================================
+5) LINE VALIDATION RULES
+--------------------------------------------------------
+For each line:
+
+A) Strip trailing whitespace
+- If the stripped line is empty, skip it immediately
+
+B) Attempt parsing inside a try block
+- Split the line using the double quote character and assign to parts
+- A valid line must provide enough sections to read:
+    - prefix from parts[0]
+    - request from parts[1]
+    - middle from parts[2]
+    - user_agent from parts[5]
+- Read ip_address as the first token in prefix
+- Read timestamp from the text between "[" and "]"
+- Split request into:
+    - method
+    - path
+    - protocol
+- Split middle into tokens and read:
+    - status_code
+    - response_bytes
+- Convert status_code to int
+- Convert response_bytes to int
+
+C) Malformed line handling
+- If IndexError, ValueError, or TypeError occurs:
+    - skip that line using continue
+
+========================================================
+6) COUNTING RULES
+--------------------------------------------------------
+After a line is parsed successfully:
+
+1. Increment line_count by 1
+
+2. Update method_counts
+- If method is not already a key, initialize it to 0
+- Increment the count for method
+
+3. Update status_counts
+- Convert status_code to a string key
+- If the status code key is not already present, initialize it to 0
+- Increment the count for that key
+
+4. Update path_counts
+- If path is not already a key, initialize it to 0
+- Increment the count for path
+
+5. Update ip_counts
+- If ip_address is not already a key, initialize it to 0
+- Increment the count for ip_address
+
+6. Update user_agent_counts
+- If user_agent is not already a key, initialize it to 0
+- Increment the count for user_agent
+
+7. Update error_request_count
+- If status_code is greater than or equal to 400:
+    - increment error_request_count by 1
+
+8. Update total_response_bytes
+- Add response_bytes to total_response_bytes
+
+9. Update largest_response
+- If results["largest_response"]["bytes"] is None OR response_bytes is greater than that value:
+    - replace bytes, path, and ip_address inside results["largest_response"]
+
+10. Update minute_counts
+- Use the timestamp up to the minute only, in this format:
+  DD/Mon/YYYY:HH:MM
+- If the minute key is not already present, initialize it to 0
+- Increment the count for that minute
+
+========================================================
+7) FINAL COMPUTATION RULES
+--------------------------------------------------------
+These happen after the main line loop has finished.
+These do not happen inside the line loop.
+
+A) Final count assignments
+- Assign line_count to results["line_count"]
+- Assign len(ip_counts) to results["unique_ip_count"]
+- Assign method_counts to results["method_counts"]
+- Assign status_counts to results["status_counts"]
+- Assign user_agent_counts to results["user_agent_counts"]
+- Assign error_request_count to results["error_request_count"]
+
+B) Compute most_requested_path
+
+- If path_counts is not empty:
+    - Find the highest request count using max(path_counts.values())
+    - Create an empty list named most_requested_path_candidates
+    - Loop through each (path, count) pair in path_counts.items()
+    - If count equals the highest request count:
+        - Append path to most_requested_path_candidates
+    - If there is more than one candidate:
+        - Select the lexicographically smallest path using min()
+    - Assign the selected path to results["most_requested_path"]
+
+C) Compute top_ip_address
+- If ip_counts is not empty:
+    - create an empty list named top_ip_candidates
+    - add every ip address with the highest count to the list
+    - assign the smallest value in that list using standard string comparison
+      to results["top_ip_address"]
+
+D) Compute average_response_bytes
+- If line_count is greater than 0:
+    - divide total_response_bytes by line_count
+    - store the result in average_response_bytes
+    - round average_response_bytes to 2 decimal places
+    - assign the rounded value to results["average_response_bytes"]
+
+E) Compute busiest_minute
+
+- If minute_counts is not empty:
+    - Find the highest count value using max(minute_counts.values())
+    - Create an empty list named busiest_minute_candidates
+    - Loop through each minute in minute_counts
+    - For each minute, check whether minute_counts[minute] is equal to the highest count value
+    - If it is:
+        - Append that minute to busiest_minute_candidates
+    - Use min() on busiest_minute_candidates to select the earliest minute by lexicographical order
+    - Assign that value to results["busiest_minute"]
+
+========================================================
+8) RETURN RULE
+--------------------------------------------------------
+This happens after the main loop and after all final computations.
+Return results.
+
+Expected Results for the provided nginx_access_1200.log:
+
+{
+    "line_count": 1200,
+    "unique_ip_count": 4,
+    "method_counts": {
+        "DELETE": 324,
+        "POST": 294,
+        "PUT": 318,
+        "GET": 264
+    },
+    "status_counts": {
+        "200": 162,
+        "401": 159,
+        "500": 141,
+        "404": 204,
+        "403": 183,
+        "201": 195,
+        "400": 156
+    },
+    "most_requested_path": "/api/login",
+    "top_ip_address": "172.16.0.3",
+    "error_request_count": 843,
+    "user_agent_counts": {
+        "curl/7.68.0": 333,
+        "Mozilla/5.0": 324,
+        "PostmanRuntime/7.28.4": 255,
+        "kube-probe/1.20": 288
+    },
+    "largest_response": {
+        "bytes": 1996,
+        "path": "/api/orders",
+        "ip_address": "127.0.0.1"
+    },
+    "average_response_bytes": 1030.41,
+    "busiest_minute": "10/Oct/2025:13:55"
+}

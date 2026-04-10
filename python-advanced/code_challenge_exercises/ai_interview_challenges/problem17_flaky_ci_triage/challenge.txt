@@ -1,0 +1,405 @@
+PROBLEM 17 — FLAKY CI TRIAGE (GITHUB WORKFLOW DEBUGGER)
+
+PURPOSE
+Write one function that analyzes a GitHub Actions workflow run summary and determines:
+
+- the most likely failure classification
+- the strongest supporting signal
+- whether the run should be retried automatically
+- the first failed job and step in execution order
+
+This simulates real-world CI triage performed by DevOps and platform engineers.
+
+========================================================
+SUMMARY
+--------------------------------------------------------
+
+Input File:
+
+1) workflow_run_summary.yaml
+
+The file contains a workflow run snapshot with jobs, steps, annotations, and artifacts.
+
+General shape:
+
+run_id: ...
+jobs:
+  - name: ...
+    conclusion: ...
+    steps:
+      - name: ...
+        conclusion: ...
+        exit_code: ...
+        log_excerpt: ...
+annotations:
+  - level: ...
+    message: ...
+artifacts:
+  - name: ...
+    status: ...
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+
+Implement exactly this function:
+
+    triage_flaky_ci_run(yaml_file_path: str) -> dict
+
+Do not add extra parameters.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+
+Return exactly this structure:
+
+{
+    "classification": "unknown",
+    "supporting_signal": None,
+    "retry_recommended": False,
+    "failed_job_name": None,
+    "failed_step_name": None
+}
+
+These keys must always exist.
+
+========================================================
+3) HELPER STATE INITIALIZATION
+--------------------------------------------------------
+
+Initialize:
+
+classification = "unknown"
+retry_recommended = False
+supporting_signal = None
+failed_job_name = None
+failed_step_name = None
+candidate_signals = []
+data = None
+
+========================================================
+4) FILE HANDLING RULES
+--------------------------------------------------------
+
+Use one outer try block for the file.
+
+- Open yaml_file_path using a context manager
+- Load the file with yaml.safe_load
+- Store result in data
+
+If FileNotFoundError:
+    return results immediately
+
+If yaml.YAMLError:
+    return results immediately
+
+Do not raise errors further.
+
+========================================================
+5) ROOT VALIDATION RULES
+--------------------------------------------------------
+
+After loading:
+
+- data must be a dictionary
+- If not, return results
+
+Read:
+- jobs
+- annotations (default to empty list if missing)
+- artifacts (default to empty list if missing)
+
+Validation:
+- jobs must be a list
+- annotations must be a list
+- artifacts must be a list
+
+If any fail:
+    return results
+
+========================================================
+6) FAILURE TARGET SELECTION RULES
+--------------------------------------------------------
+
+Before iterating jobs:
+- initialize selected_failed_step to None
+
+Iterate through jobs in order.
+
+For each job:
+- the item must be a dictionary
+- if not, skip that job
+
+Read:
+- job_name
+- job_conclusion
+- steps
+
+Validation:
+- job_name must be a string
+- job_conclusion must be a string
+- steps must be a list
+
+If any validation fails:
+- skip that job
+
+If job_conclusion equals "failure":
+- assign job_name to failed_job_name
+- stop iterating jobs after this job has been handled
+
+========================================================
+7) FAILED STEP SELECTION RULES
+--------------------------------------------------------
+
+These rules run only for the job selected by the failure target selection rules.
+
+Iterate through that job's steps in order.
+
+For each step:
+- the item must be a dictionary
+- if not, skip that step
+
+Read:
+- step_name
+- step_conclusion
+- exit_code
+- log_excerpt
+
+Validation:
+- step_name must be a string
+- step_conclusion must be a string
+- exit_code must be an integer
+- log_excerpt must be a string
+
+If any validation fails:
+- skip that step
+
+If step_conclusion equals "failure":
+- assign step_name to failed_step_name
+- assign the full step item to selected_failed_step
+- stop iterating steps immediately via break
+
+- break out of steps loop
+
+- If failed_job_name is None
+  - return results
+
+
+========================================================
+8) SIGNAL COLLECTION RULES
+
+Step 1 — Step-based signal (selected_failed_step)
+
+Check whether selected_failed_step is a dictionary.
+If it is NOT a dictionary:
+- skip all step-based signal collection
+
+If it IS a dictionary:
+- read log_excerpt from selected_failed_step
+- immediately convert log_excerpt to lowercase and store as normalized_excerpt
+
+Evaluate the following conditions in this exact order using one ordered branch chain (if / elif / else).
+Only the first matching condition appends a step-based signal.
+
+Condition 1 — bad_secrets (priority 1)
+TRUE if normalized_excerpt contains ANY ONE of:
+- "secret"
+- "credentials"
+- "authentication failed"
+- "access denied"
+- "permission denied"
+
+If TRUE, append to candidate_signals:
+{
+    "classification": "bad_secrets",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": False,
+    "priority": 1
+}
+
+Condition 2 — bad_docker_pull (priority 2)
+TRUE if normalized_excerpt contains ANY ONE of:
+- "docker pull"
+- "pull access denied"
+- "manifest unknown"
+- "image not found"
+
+If TRUE, append to candidate_signals:
+{
+    "classification": "bad_docker_pull",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": False,
+    "priority": 2
+}
+
+Condition 3 — bad_cache (priority 3)
+TRUE only if BOTH are true:
+- "cache" is in normalized_excerpt
+- normalized_excerpt contains ANY ONE of:
+    - "corrupt"
+    - "checksum"
+    - "failed to extract"
+
+If TRUE, append to candidate_signals:
+{
+    "classification": "bad_cache",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": True,
+    "priority": 3
+}
+
+Condition 4 — infra_flakiness (priority 4)
+TRUE if normalized_excerpt contains ANY ONE of:
+- "timeout"
+- "connection reset"
+- "tls handshake timeout"
+- "temporary failure in name resolution"
+
+If TRUE, append to candidate_signals:
+{
+    "classification": "infra_flakiness",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": True,
+    "priority": 4
+}
+
+Condition 5 — test_flakiness (priority 5)
+TRUE if normalized_excerpt contains ANY ONE of:
+- "assertion"
+- "expected"
+- "snapshot mismatch"
+- "test failed"
+
+If TRUE, append to candidate_signals:
+{
+    "classification": "test_flakiness",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": True,
+    "priority": 5
+}
+
+Condition 6 — default (code_failure, priority 50)
+Runs only if none of the above conditions matched.
+
+Append to candidate_signals:
+{
+    "classification": "code_failure",
+    "supporting_signal": log_excerpt,
+    "retry_recommended": False,
+    "priority": 50
+}
+
+--------------------------------------------------------
+
+Step 2 — Annotation-based signals
+
+Iterate annotations in order.
+
+For each annotation:
+- must be a dictionary, otherwise continue
+
+Read:
+- annotation_level
+- annotation_message
+
+Validation:
+- both must be strings, otherwise continue
+
+Create normalized_message by converting annotation_message to lowercase.
+
+If ANY ONE of:
+- "lost communication"
+- "runner disconnected"
+- "network error"
+
+Append to candidate_signals:
+{
+    "classification": "infra_flakiness",
+    "supporting_signal": annotation_message,
+    "retry_recommended": True,
+    "priority": 6
+}
+
+--------------------------------------------------------
+
+Step 3 — Artifact-based signals
+
+Iterate artifacts in order.
+
+For each artifact:
+- must be a dictionary, otherwise continue
+
+Read:
+- artifact_name
+- artifact_status
+
+Validation:
+- both must be strings, otherwise continue
+
+If BOTH are true:
+- artifact_name == "docker-layer-cache"
+- artifact_status != "available"
+
+Append to candidate_signals:
+{
+    "classification": "bad_cache",
+    "supporting_signal": f"{artifact_name} status: {artifact_status}",
+    "retry_recommended": True,
+    "priority": 7
+}
+========================================================
+9) FINAL SIGNAL SELECTION RULES
+--------------------------------------------------------
+
+Use candidate_signals itself as the condition.
+
+If it is truthy:
+
+- call sort on candidate_signals
+- pass a key argument
+- set that key argument to an anonymous function using lambda
+- that lambda must take one item
+- that lambda must return the item's "priority" field
+
+After sorting:
+
+- read the first item using index 0
+
+Assign:
+- classification from the first item's "classification"
+- supporting_signal from the first item's "supporting_signal"
+- retry_recommended from the first item's "retry_recommended"
+
+If candidate_signals is falsy:
+
+- do nothing
+- leave classification, supporting_signal, and retry_recommended unchanged
+========================================================
+10) FINAL ASSIGNMENT RULES
+--------------------------------------------------------
+
+Assign to results:
+
+results["classification"] = classification
+results["supporting_signal"] = supporting_signal
+results["retry_recommended"] = retry_recommended
+results["failed_job_name"] = failed_job_name
+results["failed_step_name"] = failed_step_name
+
+========================================================
+11) RETURN RULE
+--------------------------------------------------------
+
+Return results
+
+========================================================
+12) Expected results
+
+{
+    "classification": "infra_flakiness",
+    "supporting_signal": "runner lost communication with the GitHub Actions service",
+    "retry_recommended": true,
+    "failed_job_name": "integration-tests",
+    "failed_step_name": "Run integration suite"
+}

@@ -1,0 +1,66 @@
+run_id: 8127345
+repository: acme/platform
+branch: main
+commit_sha: a1b2c3d4e5f6
+conclusion: failure
+trigger: push
+jobs:
+  - job_id: build
+    name: build-and-package
+    conclusion: success
+    runner: ubuntu-latest
+    started_at: "2026-04-10T09:00:00Z"
+    completed_at: "2026-04-10T09:06:00Z"
+    steps:
+      - name: Checkout
+        conclusion: success
+        exit_code: 0
+        log_excerpt: "Repository checkout completed successfully"
+      - name: Build image
+        conclusion: success
+        exit_code: 0
+        log_excerpt: "docker build finished"
+  - job_id: integration
+    name: integration-tests
+    conclusion: failure
+    runner: ubuntu-latest
+    started_at: "2026-04-10T09:06:00Z"
+    completed_at: "2026-04-10T09:19:00Z"
+    steps:
+      - name: Restore cache
+        conclusion: success
+        exit_code: 0
+        log_excerpt: "primary cache restored"
+      - name: Start dependencies
+        conclusion: success
+        exit_code: 0
+        log_excerpt: "postgres and redis became healthy"
+      - name: Run integration suite
+        conclusion: failure
+        exit_code: 124
+        log_excerpt: "integration shard 3 timed out while waiting for upstream service response"
+      - name: Upload logs
+        conclusion: skipped
+        exit_code: 0
+        log_excerpt: "not executed"
+  - job_id: deploy-preview
+    name: deploy-preview
+    conclusion: skipped
+    runner: ubuntu-latest
+    started_at: "2026-04-10T09:19:00Z"
+    completed_at: "2026-04-10T09:19:00Z"
+    steps:
+      - name: Deploy
+        conclusion: skipped
+        exit_code: 0
+        log_excerpt: "needs were not satisfied"
+annotations:
+  - level: warning
+    message: "runner lost communication with the GitHub Actions service"
+  - level: notice
+    message: "cache download failed for optional test-fixtures key"
+artifacts:
+  - name: junit-xml
+    status: uploaded
+  - name: docker-layer-cache
+    status: available

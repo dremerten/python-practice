@@ -1,0 +1,140 @@
+snapshot_date: "2026-02-15"
+organization: Northwind Systems
+teams:
+  - team_id: T1
+    name: Platform
+    projects:
+      - project_id: P-100
+        name: Auth Refresh
+        status: active
+        owner: Maya
+        risk_score: 8
+        docs_url: https://internal.example/docs/auth-refresh
+        tags:
+          - security
+          - auth
+          - api
+        tasks:
+          - task_id: A1
+            owner: Maya
+            priority: high
+            completed: false
+            due_date: "2026-02-10"
+            blocked: true
+          - task_id: A2
+            owner: Liam
+            priority: medium
+            completed: true
+            due_date: "2026-02-01"
+            blocked: false
+          - task_id: A3
+            owner: Maya
+            priority: high
+            completed: false
+            due_date: "2026-02-20"
+            blocked: false
+      - project_id: P-101
+        name: Billing Sync
+        status: paused
+        owner: Liam
+        risk_score: 5
+        docs_url: null
+        tags:
+          - billing
+          - api
+        tasks:
+          - task_id: B1
+            owner: Liam
+            priority: low
+            completed: false
+            due_date: "2026-01-31"
+            blocked: false
+          - task_id: B2
+            owner: Nora
+            priority: medium
+            completed: false
+            due_date: "2026-02-14"
+            blocked: true
+
+  - team_id: T2
+    name: Data
+    projects:
+      - project_id: P-200
+        name: Event Pipeline
+        status: active
+        owner: Nora
+        risk_score: 8
+        docs_url: https://internal.example/docs/event-pipeline
+        tags:
+          - data
+          - pipeline
+          - analytics
+        tasks:
+          - task_id: C1
+            owner: Nora
+            priority: high
+            completed: false
+            due_date: "2026-02-13"
+            blocked: false
+          - task_id: C2
+            owner: Owen
+            priority: medium
+            completed: false
+            due_date: "2026-02-16"
+            blocked: false
+          - task_id: C3
+            owner: Owen
+            priority: low
+            completed: true
+            due_date: "2026-01-15"
+            blocked: false
+      - project_id: P-201
+        name: Forecast API
+        status: active
+        owner: Omar
+        risk_score: 9
+        docs_url: ""
+        tags:
+          - api
+          - ml
+          - analytics
+        tasks:
+          - task_id: D1
+            owner: Omar
+            priority: high
+            completed: false
+            due_date: "2026-02-12"
+            blocked: true
+          - task_id: D2
+            owner: Priya
+            priority: high
+            completed: false
+            due_date: "2026-02-18"
+            blocked: false
+
+  - team_id: T3
+    name: Operations
+    projects:
+      - project_id: P-300
+        name: Edge Rollout
+        status: complete
+        owner: Priya
+        risk_score: 4
+        docs_url: https://internal.example/docs/edge-rollout
+        tags:
+          - infra
+          - rollout
+          - edge
+        tasks:
+          - task_id: E1
+            owner: Priya
+            priority: medium
+            completed: true
+            due_date: "2026-01-20"
+            blocked: false
+          - task_id: E2
+            owner: Quinn
+            priority: low
+            completed: true
+            due_date: "2026-01-25"
+            blocked: false

@@ -1,0 +1,418 @@
+PROJECT PORTFOLIO YAML AUDIT — NESTED STRUCTURE SUMMARY EXTRACTION
+
+PURPOSE
+Write one function that reads a YAML portfolio snapshot file,
+then returns a fixed summary dictionary.
+
+The goal is to assess careful file handling, nested data traversal,
+count aggregation, defensive validation, tie-breaking, and clear rule implementation.
+
+========================================================
+SUMMARY
+--------------------------------------------------------
+Input File:
+
+1) portfolio_snapshot.yaml
+The file contains a root dictionary with a snapshot date and a list of teams.
+Each team contains nested projects, and each project contains nested tasks and tags.
+
+General shape:
+
+snapshot_date: YYYY-MM-DD
+teams:
+  - team_id: ...
+    name: ...
+    projects:
+      - project_id: ...
+        status: ...
+        owner: ...
+        risk_score: ...
+        docs_url: ...
+        tags:
+          - ...
+        tasks:
+          - owner: ...
+            priority: ...
+            completed: ...
+            due_date: YYYY-MM-DD
+            blocked: ...
+
+--------------------------------------------------------
+Required Variable Names:
+
+Final result:
+- results
+
+Loaded data:
+- data
+
+Helper state:
+- owner_task_counts
+- priority_counts
+- tag_counts
+- projects_missing_docs
+- blocked_project_ids
+- total_task_count
+- project_count
+- active_project_count
+- overdue_task_count
+- team_count
+- highest_risk_candidates
+- highest_risk_score
+
+Per-entity variables:
+- team
+- project
+- task
+- team_id
+- project_id
+- status
+- owner
+- risk_score
+- docs_url
+- tags
+- tasks
+- priority
+- completed
+- due_date
+- blocked
+
+Temporary variables:
+- average_tasks_per_project
+
+========================================================
+1) FUNCTION SIGNATURE
+--------------------------------------------------------
+Implement exactly this function:
+
+    analyze_project_portfolio(yaml_file_path: str) -> dict
+
+Do not add extra parameters.
+Return one dictionary.
+
+========================================================
+2) REQUIRED RETURN OBJECT
+--------------------------------------------------------
+Return exactly this structure:
+
+{
+    "team_count": 0,
+    "project_count": 0,
+    "active_project_count": 0,
+    "owner_task_counts": {},
+    "priority_counts": {},
+    "overdue_task_count": 0,
+    "projects_missing_docs": [],
+    "blocked_project_ids": [],
+    "tag_counts": {},
+    "highest_risk_project": {
+        "project_id": None,
+        "risk_score": None,
+        "team_id": None
+    },
+    "average_tasks_per_project": None
+}
+
+These keys must always exist in the returned dictionary,
+even if the file is missing, invalid YAML, empty, or all nested entries are invalid.
+
+========================================================
+3) HELPER STATE INITIALIZATION
+--------------------------------------------------------
+Initialize the following:
+
+owner_task_counts = {}
+priority_counts = {}
+tag_counts = {}
+projects_missing_docs = []
+blocked_project_ids = []
+total_task_count = 0
+project_count = 0
+active_project_count = 0
+overdue_task_count = 0
+team_count = 0
+highest_risk_candidates = []
+highest_risk_score = None
+
+========================================================
+4) FILE HANDLING RULES
+--------------------------------------------------------
+Use one outer try block for the file.
+
+A) YAML file handling
+- Open yaml_file_path using a context manager
+- Load the file with yaml.safe_load
+- Store the loaded object in data
+
+B) Missing or invalid file handling
+- If FileNotFoundError happens while opening the file:
+    - return results immediately
+- If yaml.YAMLError happens while loading the file:
+    - return results immediately
+
+Do not raise either error further.
+
+========================================================
+5) ROOT VALIDATION RULES
+--------------------------------------------------------
+After loading the YAML:
+
+A) Root structure
+- The loaded object must be a dictionary
+- If the loaded object is not a dictionary:
+    - return results immediately
+
+B) Root field validation
+- Read snapshot_date from the root
+- Read teams from the root
+- If snapshot_date is not a string:
+    - return results immediately
+- If teams is not a list:
+    - return results immediately
+
+C) Snapshot date rule
+- snapshot_date must be treated as a plain string in YYYY-MM-DD format
+- Because the format is fixed, standard string comparison is enough for overdue checks
+
+========================================================
+6) TEAM VALIDATION RULES
+--------------------------------------------------------
+Loop through teams one item at a time.
+
+For each team:
+- The item must be a dictionary
+- If the item is not a dictionary:
+    - skip that team using continue
+
+- Read team_id from the team
+- Read projects from the team
+
+- If team_id is not a string:
+    - skip that team using continue
+- If projects is not a list:
+    - skip that team using continue
+
+After a team passes all validation checks:
+- Increment team_count by 1
+
+========================================================
+7) PROJECT VALIDATION RULES
+--------------------------------------------------------
+Inside each valid team, loop through projects.
+
+For each project:
+- The item must be a dictionary
+- If the item is not a dictionary:
+    - skip that project using continue
+
+- Read project_id from the project
+- Read status from the project
+- Read owner from the project
+- Read risk_score from the project
+- Read docs_url from the project
+- Read tags from the project
+- Read tasks from the project
+
+- If project_id is not a string:
+    - skip that project using continue
+- If status is not a string:
+    - skip that project using continue
+- If owner is not a string:
+    - skip that project using continue
+- If risk_score is not an integer:
+    - skip that project using continue
+- If tags is not a list:
+    - skip that project using continue
+- If tasks is not a list:
+    - skip that project using continue
+- If docs_url is not None and is not a string:
+    - skip that project using continue
+
+After a project passes validation:
+1. Increment project_count by 1
+2. If status equals "active":
+   - increment active_project_count by 1
+3. If docs_url is None or an empty string:
+   - append project_id to projects_missing_docs
+
+4. Count tags
+   - Loop through tags
+   - If a tag is not a string:
+       - skip that tag using continue
+   - If a tag is not already present in tag_counts:
+       - initialize it to 0
+   - Increment the count for that tag
+
+========================================================
+8) HIGHEST RISK PROJECT RULES
+--------------------------------------------------------
+This happens after project validation and before the task loop.
+
+For each valid project:
+- If highest_risk_score is None or risk_score is greater than highest_risk_score:
+    - assign risk_score to highest_risk_score
+    - replace highest_risk_candidates with a new list containing one dictionary:
+      - project_id
+      - risk_score
+      - team_id
+- Else if risk_score is equal to highest_risk_score:
+    - append a dictionary to highest_risk_candidates containing:
+      - project_id
+      - risk_score
+      - team_id
+
+========================================================
+9) TASK VALIDATION RULES
+--------------------------------------------------------
+Inside each valid project, loop through tasks.
+
+For each task:
+- The item must be a dictionary
+- If the item is not a dictionary:
+    - skip that task using continue
+
+- Read owner from the task
+- Read priority from the task
+- Read completed from the task
+- Read due_date from the task
+- Read blocked from the task
+
+- If owner is not a string:
+    - skip that task using continue
+
+- If priority is not one of "low", "medium", or "high":
+    - skip that task using continue
+
+- If completed is not a boolean:
+    - skip that task using continue
+
+- If due_date is not a string:
+    - skip that task using continue
+
+- If blocked is not a boolean:
+    - skip that task using continue
+
+After a task passes validation:
+1. Increment total_task_count by 1
+
+2. Update owner_task_counts
+   - If owner is not already a key:
+       - initialize it to 0
+   - Increment the count for owner
+
+3. Update priority_counts
+   - If priority is not already a key:
+       - initialize it to 0
+   - Increment the count for priority
+
+4. Update overdue_task_count
+   - If completed is False and due_date is earlier than snapshot_date:
+       - increment overdue_task_count by 1
+
+5. Track blocked projects
+   - If blocked is True and completed is False:
+       - check whether project_id is already in blocked_project_ids
+       - if project_id is not already present:
+           - append project_id to blocked_project_ids
+
+========================================================
+10) FINAL COMPUTATION RULES
+--------------------------------------------------------
+These happen after all loops finish.
+
+A) Final count assignments
+- Assign team_count to results["team_count"]
+- Assign project_count to results["project_count"]
+- Assign active_project_count to results["active_project_count"]
+- Assign owner_task_counts to results["owner_task_counts"]
+- Assign priority_counts to results["priority_counts"]
+- Assign overdue_task_count to results["overdue_task_count"]
+- Assign tag_counts to results["tag_counts"]
+
+B) Final list cleanup
+- Sort projects_missing_docs in ascending lexicographical order
+- Sort blocked_project_ids in ascending lexicographical order
+- Assign projects_missing_docs to results["projects_missing_docs"]
+- Assign blocked_project_ids to results["blocked_project_ids"]
+
+C) Highest risk final selection
+- If highest_risk_candidates is not empty:
+    - sort highest_risk_candidates using key=lambda item: item["project_id"]
+    - assign highest_risk_candidates[0] to results["highest_risk_project"]
+
+D) Compute average_tasks_per_project
+- If project_count is greater than 0:
+    - divide total_task_count by project_count
+    - store the result in average_tasks_per_project
+    - round average_tasks_per_project to 2 decimal places
+    - assign the rounded value to results["average_tasks_per_project"]
+
+========================================================
+11) RETURN RULE
+--------------------------------------------------------
+After all final computations, return results.
+
+========================================================
+12) EXPECTED RESULTS FOR THE PROVIDED portfolio_snapshot.yaml
+--------------------------------------------------------
+{
+    "team_count": 3,
+    "project_count": 5,
+    "active_project_count": 3,
+    "owner_task_counts": {
+        "Maya": 2,
+        "Liam": 2,
+        "Nora": 2,
+        "Owen": 2,
+        "Omar": 1,
+        "Priya": 2,
+        "Quinn": 1
+    },
+    "priority_counts": {
+        "high": 5,
+        "medium": 4,
+        "low": 3
+    },
+    "overdue_task_count": 5,
+    "projects_missing_docs": [
+        "P-101",
+        "P-201"
+    ],
+    "blocked_project_ids": [
+        "P-100",
+        "P-101",
+        "P-201"
+    ],
+    "tag_counts": {
+        "security": 1,
+        "auth": 1,
+        "api": 3,
+        "billing": 1,
+        "data": 1,
+        "pipeline": 1,
+        "analytics": 2,
+        "ml": 1,
+        "infra": 1,
+        "rollout": 1,
+        "edge": 1
+    },
+    "highest_risk_project": {
+        "project_id": "P-201",
+        "risk_score": 9,
+        "team_id": "T2"
+    },
+    "average_tasks_per_project": 2.4
+}
+
+========================================================
+13) HINTS
+--------------------------------------------------------
+- Validate one level at a time: root, then team, then project, then task.
+- Read fields before validating them when the earlier rules say to read them first.
+- Use strict type checks and skip immediately when a validation rule fails.
+- Treat snapshot_date and due_date as plain strings because the format is fixed.
+- For missing docs, count only None and the empty string as missing.
+- For tag counting, skip non-string tags instead of skipping the whole project.
+- Track the current highest score separately from the final candidate selection.
+- Only add a blocked project once.
+- Build results from helper state after traversal is finished.

@@ -1,16 +1,22 @@
-import yaml
 import json
+import yaml
 
 
 def triage_flaky_ci_run(yaml_file_path: str) -> dict:
+    # ========================================================
+    # 2) REQUIRED RETURN OBJECT
+    # ========================================================
     results = {
-    "classification": "unknown",
-    "supporting_signal": None,
-    "retry_recommended": False,
-    "failed_job_name": None,
-    "failed_step_name": None
+        "classification": "unknown",
+        "supporting_signal": None,
+        "retry_recommended": False,
+        "failed_job_name": None,
+        "failed_step_name": None
     }
 
+    # ========================================================
+    # 3) HELPER STATE INITIALIZATION
+    # ========================================================
     classification = "unknown"
     retry_recommended = False
     supporting_signal = None
@@ -19,22 +25,26 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
     candidate_signals = []
     data = None
 
+    # ========================================================
+    # 4) FILE HANDLING RULES
+    # ========================================================
     try:
-        with open(yaml_file_path, 'r') as file:
-            data = yaml.safe_load(file)
+        with open(yaml_file_path, "r") as f:
+            data = yaml.safe_load(f)
     except FileNotFoundError:
         return results
     except yaml.YAMLError:
         return results
 
+    # ========================================================
+    # 5) ROOT VALIDATION RULES
+    # ========================================================
     if not isinstance(data, dict):
         return results
-    
-    jobs, annotations, artifacts = (
-        data.get("jobs"),
-        data.get("annotations", []),
-        data.get("artifacts", [])
-    )
+
+    jobs = data.get("jobs")
+    annotations = data.get("annotations", [])
+    artifacts = data.get("artifacts", [])
 
     if not isinstance(jobs, list):
         return results
@@ -43,16 +53,18 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
     if not isinstance(artifacts, list):
         return results
 
+    # ========================================================
+    # 6) FAILURE TARGET SELECTION RULES
+    # ========================================================
     selected_failed_step = None
+
     for job in jobs:
         if not isinstance(job, dict):
             continue
 
-        job_name, job_conclusion, steps = (
-            job.get("name"),
-            job.get("conclusion"),
-            job.get("steps")
-        )
+        job_name = job.get("name")
+        job_conclusion = job.get("conclusion")
+        steps = job.get("steps")
 
         if not isinstance(job_name, str):
             continue
@@ -63,7 +75,10 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
 
         if job_conclusion == "failure":
             failed_job_name = job_name
-            
+
+            # ========================================================
+            # 7) FAILED STEP SELECTION RULES
+            # ========================================================
             for step in steps:
                 if not isinstance(step, dict):
                     continue
@@ -94,7 +109,7 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
 
     # ========================================================
     # 8) SIGNAL COLLECTION RULES
-    # ========================================================  
+    # ========================================================
     if isinstance(selected_failed_step, dict):
         log_excerpt = selected_failed_step.get("log_excerpt")
         normalized_excerpt = log_excerpt.lower()
@@ -131,7 +146,7 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
             and (
                 "corrupt" in normalized_excerpt
                 or "checksum" in normalized_excerpt
-                or "failed to extract"
+                or "failed to extract" in normalized_excerpt
             )
         ):
             candidate_signals.append({
@@ -140,12 +155,12 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
                 "retry_recommended": True,
                 "priority": 3
             })
-        
+
         elif (
             "timeout" in normalized_excerpt
             or "connection reset" in normalized_excerpt
             or "tls handshake timeout" in normalized_excerpt
-            or "temporary failure in name resolution"
+            or "temporary failure in name resolution" in normalized_excerpt
         ):
             candidate_signals.append({
                 "classification": "infra_flakiness",
@@ -166,7 +181,7 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
                 "retry_recommended": True,
                 "priority": 5
             })
-        
+
         else:
             candidate_signals.append({
                 "classification": "code_failure",
@@ -174,20 +189,20 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
                 "retry_recommended": False,
                 "priority": 50
             })
-        
+
     for annotation in annotations:
         if not isinstance(annotation, dict):
             continue
 
-        annotation_level, annotation_message = (
-            annotation.get("level"),
-            annotation.get("message")
-        )
+        annotation_level = annotation.get("level")
+        annotation_message = annotation.get("message")
 
-        if not isinstance(annotation_level, str) and not isinstance(annotation_message, str):
+        if not isinstance(annotation_level, str):
+            continue
+        if not isinstance(annotation_message, str):
             continue
 
-        normalized_message = annotation_level.lower()
+        normalized_message = annotation_message.lower()
 
         if (
             "lost communication" in normalized_message
@@ -204,21 +219,19 @@ def triage_flaky_ci_run(yaml_file_path: str) -> dict:
     for artifact in artifacts:
         if not isinstance(artifact, dict):
             continue
-        
-        artifact_name, artifact_status = (
-            artifact.get("name"),
-            artifact.get("status")
-        )
+
+        artifact_name = artifact.get("name")
+        artifact_status = artifact.get("status")
 
         if not isinstance(artifact_name, str):
             continue
         if not isinstance(artifact_status, str):
             continue
-        
+
         if artifact_name == "docker-layer-cache" and artifact_status != "available":
             candidate_signals.append({
                 "classification": "bad_cache",
-                "supporting_signal": artifact_name + " status: " + artifact_status,
+                "supporting_signal": f"{artifact_name} status: {artifact_status}",
                 "retry_recommended": True,
                 "priority": 7
             })

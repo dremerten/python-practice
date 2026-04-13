@@ -1,0 +1,54 @@
+[
+    {
+        "rule_id": "fw-001",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 443,
+        "source": "0.0.0.0/0",
+        "description": "Allow HTTPS",
+        "enabled": true,
+    },
+    {
+        "rule_id": "fw-002""environment": "production",
+        "protocol": "tcp",
+        "port": "22",
+        "source": "0.0.0.0/0",
+        "description": "Allow SSH from anywhere",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-003",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 5432,
+        "source": "10.0.0.0/16",
+        "description": "Allow Postgres from private network",
+        "enabled": tru
+    },
+    {
+        "rule_id": "fw-004",
+        "environment": "production",
+        "protocol": "udp",
+        "port": 53,
+        "source": "10.0.1.0/24",
+        "description": "Allow DNS from app subnet",
+        "enabled": true,
+        {
+            "rule_id": "fw-005",
+            "environment": "production",
+            "protocol": icmp,
+            "port": 0,
+            "source": "0.0.0.0/0",
+            "description": "Bad protocol example",
+            "enabled": true
+        },
+        {
+            "rule_id": "fw-006",
+            "environment": "staging",
+            "protocol": "tcp",
+            "port": 3306,
+            "source": "0.0.0.0/0",
+            "description": "MySQL exposed publicly",
+            "enabled": true
+        }
+    ]

@@ -5,7 +5,7 @@
         "protocol": "tcp",
         "port": 443,
         "source": "0.0.0.0/0",
-        "description": "Allow HTTPS",
+        "description": "Allow HTTPS - missing port key",
         "enabled": true
     },
     {
@@ -41,7 +41,7 @@
         "protocol": "icmp",
         "port": 0,
         "source": "0.0.0.0/0",
-        "description": "Bad protocol example",
+        "description": "Bad protocol and port out of range",
         "enabled": true
     },
     {
@@ -50,7 +50,259 @@
         "protocol": "tcp",
         "port": 3306,
         "source": "0.0.0.0/0",
-        "description": "MySQL exposed publicly",
+        "description": "MySQL exposed publicly in staging",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-007",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 443,
+        "source": "0.0.0.0/0",
+        "description": "Allow HTTPS",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-008",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 80,
+        "source": "0.0.0.0/0",
+        "description": "Allow HTTP",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-009",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 8080,
+        "source": "10.0.0.0/8",
+        "description": "Allow app traffic from internal network",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-010",
+        "environment": "production",
+        "protocol": "udp",
+        "port": 123,
+        "source": "0.0.0.0/0",
+        "description": "Allow NTP",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-011",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 3389,
+        "source": "0.0.0.0/0",
+        "description": "RDP exposed to the internet",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-012",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 3389,
+        "source": "10.0.0.0/8",
+        "description": "RDP from internal network only",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-013",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 6379,
+        "source": "0.0.0.0/0",
+        "description": "Redis exposed publicly",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-014",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 6379,
+        "source": "172.16.0.0/12",
+        "description": "Redis from private network only",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-015",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 70000,
+        "source": "10.0.0.0/8",
+        "description": "Port number exceeds valid range",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-016",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 8443,
+        "source": "0.0.0.0/0",
+        "description": "Allow HTTPS alternate port",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-017",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 22,
+        "source": "10.0.0.0/8",
+        "description": "SSH from internal network only",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-018",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 65535,
+        "source": "10.0.0.0/8",
+        "description": "Upper boundary port test",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-019",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 1,
+        "source": "10.0.0.0/8",
+        "description": "Lower boundary port test",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-020",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 25,
+        "source": "0.0.0.0/0",
+        "description": "Allow SMTP",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-021",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 587,
+        "source": "0.0.0.0/0",
+        "description": "Allow SMTP submission",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-022",
+        "environment": "production",
+        "protocol": "udp",
+        "port": 161,
+        "source": "10.0.0.0/8",
+        "description": "Allow SNMP from internal network",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-023",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 443,
+        "source": "10.0.0.0/8",
+        "description": "Disabled rule - should fail enabled check",
+        "enabled": false
+    },
+    {
+        "rule_id": "fw-024",
+        "environment": "production",
+        "protocol": "FTP",
+        "port": 21,
+        "source": "0.0.0.0/0",
+        "description": "Invalid protocol uppercase FTP",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-025",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": -1,
+        "source": "10.0.0.0/8",
+        "description": "Negative port number",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-026",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 5432,
+        "source": "0.0.0.0/0",
+        "description": "Postgres exposed publicly",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-027",
+        "environment": "staging",
+        "protocol": "tcp",
+        "port": 8080,
+        "source": "0.0.0.0/0",
+        "description": "Staging app port open publicly",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-028",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 3306,
+        "source": "192.168.0.0/16",
+        "description": "MySQL from internal subnet only",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-029",
+        "environment": "production",
+        "protocol": "udp",
+        "port": 514,
+        "source": "10.0.0.0/8",
+        "description": "Syslog from internal network",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-030",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 9200,
+        "source": "0.0.0.0/0",
+        "description": "Elasticsearch API open publicly",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-031",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 27017,
+        "source": "10.0.0.0/8",
+        "description": "MongoDB from internal network only",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-032",
+        "environment": "production",
+        "protocol": "udp",
+        "port": 1194,
+        "source": "0.0.0.0/0",
+        "description": "Allow OpenVPN",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-033",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 2181,
+        "source": "10.0.0.0/8",
+        "description": "Zookeeper from internal network",
+        "enabled": true
+    },
+    {
+        "rule_id": "fw-034",
+        "environment": "production",
+        "protocol": "tcp",
+        "port": 9092,
+        "source": "10.0.0.0/8",
+        "description": "Kafka broker from internal network",
         "enabled": true
     }
 ]

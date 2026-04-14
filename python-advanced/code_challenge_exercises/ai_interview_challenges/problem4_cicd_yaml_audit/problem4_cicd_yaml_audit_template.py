@@ -204,41 +204,48 @@ EVALUATION FLOW
 define evaluate_pipeline_compliance(pipeline):
 
 - Create result DICTIONARY with initial values:
- result = {
-        "compliant": False,
-        "pipeline_name": None,
-        "environment": None,
-        "total_jobs": 0,
-        "valid_jobs_count": 0,
-        "failed_jobs_count": 0,
-        "failed_jobs": [],
-        "reasons": [],
-    }
+  result = {
+      "compliant": False,
+      "pipeline_name": None,
+      "environment": None,
+      "total_jobs": 0,
+      "valid_jobs_count": 0,
+      "failed_jobs_count": 0,
+      "failed_jobs": [],
+      "reasons": [],
+  }
 
-- Call validate_pipeline_structure and assign result to problems
+- Call validate_pipeline_structure and assign the returned value to problems
 
-  If problems is not empty:
-    → extend result["reasons"] with problems
-    → return result immediately
+- If problems is not empty:
+  → extend result["reasons"] with problems
+  → return result immediately
 
-- Extract values from pipeline:
-  → assign pipeline_name from pipeline["pipeline_name"] to result["pipeline_name"]
-  → assign environment from pipeline["environment"] to result["environment"]
-  → get jobs from pipeline (default to empty dictionary if missing)
+- Extract top-level pipeline values:
+  → assign pipeline["pipeline_name"] to result["pipeline_name"]
+  → assign pipeline["environment"] to result["environment"]
+
+- Define jobs before using it:
+  → get the value of "jobs" from pipeline
+  → if "jobs" is missing, use an empty dictionary instead
+  → assign that value to jobs
 
 - Set total_jobs:
   → assign the number of items in jobs to result["total_jobs"]
 
-- For each job in jobs:
+- Validate each job:
   → iterate through each job_name and job_data in jobs.items()
-  → call validate_job(job_name, job_data, jobs) and assign the result to problems
-  → if problems is not empty:
-      → increment result["failed_jobs_count"] by 1
-      → append job_name to result["failed_jobs"]
-      → extend result["reasons"] with problems
-  → otherwise:
-      → increment result["valid_jobs_count"] by 1
+  → call validate_job(job_name, job_data, jobs)
+  → assign the returned value to problems
 
+- If problems is not empty for that job:
+  → increment result["failed_jobs_count"] by 1
+  → append job_name to result["failed_jobs"]
+  → extend result["reasons"] with problems
+
+- Otherwise:
+  → increment result["valid_jobs_count"] by 1
+  
 - Apply global rules:
   → if the number of jobs is less than 3
       → append "Pipeline must define at least 3 jobs" to result["reasons"]

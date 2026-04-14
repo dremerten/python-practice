@@ -121,7 +121,7 @@ def validate_job(job_name: str, job_data: dict, all_jobs: dict) -> list[str]:
 
 
 def evaluate_pipeline_compliance(pipeline: dict) -> dict:
-    result = {
+    results = {
         "compliant": False,
         "pipeline_name": None,
         "environment": None,
@@ -132,38 +132,43 @@ def evaluate_pipeline_compliance(pipeline: dict) -> dict:
         "reasons": [],
     }
 
+    if not isinstance(pipeline, dict):
+        results["reasons"].append(f"Pipeline must be a dictionary")
+        return results
+
     problems = validate_pipeline_structure(pipeline)
     if problems:
-        result["reasons"].extend(problems)
-        return result
+        results["reasons"].extend(problems)
+        return results
 
-    result["pipeline_name"] = pipeline.get("pipeline_name")
-    result["environment"] = pipeline.get("environment")
+    results["pipeline_name"] = pipeline["pipeline_name"]
+    results["environment"] = pipeline["environment"]
 
     jobs = pipeline.get("jobs", {})
-    result["total_jobs"] = len(jobs)
+    results["total_jobs"] = len(jobs)
 
     for job_name, job_data in jobs.items():
         problems = validate_job(job_name, job_data, jobs)
         if problems:
-            result["failed_jobs_count"] += 1
-            result["failed_jobs"].append(job_name)
-            result["reasons"].extend(problems)
+            results["failed_jobs_count"] += 1
+            results["failed_jobs"].append(job_name)
+            results["reasons"].extend(problems)
         else:
-            result["valid_jobs_count"] += 1
+            results["valid_jobs_count"] += 1
 
     if len(jobs) < 3:
-        result["reasons"].append("Pipeline must define at least 3 jobs")
-
-    if result["environment"] != "production":
-        result["reasons"].append("Pipeline environment must be production")
-
-    result["compliant"] = (
-        len(result["reasons"]) == 0
-        and result["failed_jobs_count"] == 0
+        results["reasons"].append("Pipeline must define at least 3 jobs")
+    if results["environment"] != "production":
+        results["reasons"].append("Pipeline environment must be production")
+    
+    # if results["reasons"] and results["failed_jobs_count"] == 0:
+    #     results["compliant"] = True
+    results["compliant"] = (
+        len(results["reasons"]) == 0
+        and results["failed_jobs_count"] == 0
     )
 
-    return result
+    return results
 
 
 if __name__ == "__main__":

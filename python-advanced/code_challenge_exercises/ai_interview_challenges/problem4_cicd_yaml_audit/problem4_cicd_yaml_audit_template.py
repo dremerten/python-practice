@@ -162,31 +162,31 @@ validate_job(job_name, job_data, all_jobs):
           → if value is not a string
               → skip to the next item
           → convert value to lowercase and assign to value_lower
-          → use any() to check if any keyword in sensitive_keywords is contained in the value_lower OR if value startswith() "AKIA"
+          → use any() to check if any keyword in sensitive_keywords is contained 
+          in the value_lower OR if value startswith() "AKIA"
           → if either condition is true
               → append f"{job_name} contains hardcoded secret in env: {key}" to problems
 
-- If the value of "stage" is "deploy":
+- Check whether the value of "stage" is "deploy"
+  → If it is, continue with the deploy validations
 
-  Validate branch:
-    → get the value of "branch"
-    → if branch is not equal to "main"
-        → append f"{job_name} must deploy from main branch" to problems
+- Validate branch
+  → Get the value of "branch"
+  → If branch is not equal to "main"
+      → Append f"{job_name} must deploy from main branch" to problems
 
-- If the value of "stage" is "deploy":
-
-  Validate needs:
-    → get the value of "needs"
-    → if needs is not a list
-        → append f"{job_name} must define dependencies as a list" to problems
-    → otherwise
-        → assign valid using any(...)
-        → in that any(...), let dep represent each item in needs
-        → for each dep, check:
-            • dep is in all_jobs
-            • and all_jobs[dep].get("stage") == "test"
-        → if valid is False
-            → append f"{job_name} must depend on at least one test job" to problems
+- Validate needs
+  → Get the value of "needs"
+  → If needs is not a list
+      → Append f"{job_name} must define dependencies as a list" to problems
+  → Otherwise
+      → Define valid using any()
+          → Pass a condition that loops through each item in needs
+          → For each item, check:
+              • it exists in all_jobs
+              • and its stage in all_jobs is "test"
+      → If valid is False
+          → Append f"{job_name} must depend on at least one test job" to problems
 
 - Validate retries:
 
@@ -255,34 +255,30 @@ define evaluate_pipeline_compliance(pipeline):
 EXPECTED RESULT (FOR PROVIDED PIPELINE)
 ----------------------------------------
 
-compliant: False
-pipeline_name: "sample-ci-pipeline"
-environment: "staging"
-total_jobs: 6
-valid_jobs_count: 1
-failed_jobs_count: 5
-
-failed_jobs:
-[
-  "test-job",
-  "build-job",
-  "deploy-job",
-  "insecure-job",
-  "bad-structure-job"
-]
-
-reasons include:
-
-- test-job contains hardcoded secret in env: API_TOKEN
-- build-job uses disallowed image: python:latest
-- deploy-job must deploy from main branch
-- deploy-job must depend on at least one test job
-- insecure-job contains hardcoded secret in env: PASSWORD
-- bad-structure-job script must be a non-empty list
-- Pipeline environment must be production
-
-valid job:
-- lint-job
+{
+    "compliant": false,
+    "pipeline_name": "sample-ci-pipeline",
+    "environment": "staging",
+    "total_jobs": 6,
+    "valid_jobs_count": 2,
+    "failed_jobs_count": 4,
+    "failed_jobs": [
+        "build-job",
+        "deploy-job",
+        "insecure-job",
+        "bad-structure-job"
+    ],
+    "reasons": [
+        "build-job uses disallowed image: python:latest",
+        "deploy-job must deploy from main branch",
+        "deploy-job must depend on at least one test job",
+        "insecure-job contains hardcoded secret in env: PASSWORD",
+        "bad-structure-job script must be a non-empty list",
+        "bad-structure-job must deploy from main branch",
+        "bad-structure-job must define dependencies as a list",
+        "Pipeline environment must be production"
+    ]
+}
 
 
 if __name__ == "__main__:

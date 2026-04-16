@@ -87,7 +87,6 @@ def process_student_grades(file_path: str) -> dict:
     for name, total_attempts in student_attempts.items():
         if total_attempts > 2:
             results["multi_attempt_students"][name] = total_attempts
-    breakpoint()
 
     return results
 

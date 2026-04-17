@@ -18,7 +18,6 @@ def audit_k8s_manifests(file_path: str) -> dict:
     try:
         with open(file_path, "r") as file:
             documents = list(yaml.safe_load_all(file))
-
     except FileNotFoundError:
         print(f"Error: The file '{file_path}' was not found.")
         return results

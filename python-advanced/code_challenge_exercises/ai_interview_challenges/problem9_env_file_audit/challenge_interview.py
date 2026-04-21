@@ -35,10 +35,11 @@
         #       If key already in seen_variables, add key to duplicates set
         #       Otherwise add key to seen_variables
 
-        # 15. SENSITIVE VARIABLE CHECK
+# 15. SENSITIVE VARIABLE CHECK
         #       Uppercase the key
-        #       If any keyword from sensitive_keywords is found in the uppercased key:
-        #           append key to results["sensitive_variables"]
+        #       Loop through sensitive_keywords — if any keyword is a substring of the uppercased key:
+        #           append the original key (not uppercased) to results["sensitive_variables"]
+        #           break out of the keyword loop to avoid appending the same key multiple times per keyword match
 
     # 16. POST-LOOP: assign sorted(duplicates) to results["duplicate_variables"]
     # 17. POST-LOOP: sort results["empty_values"] in place

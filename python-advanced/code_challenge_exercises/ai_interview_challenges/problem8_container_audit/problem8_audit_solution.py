@@ -1,4 +1,5 @@
 import yaml
+import json
 
 
 def audit_docker_compose(file_path: str) -> dict:
@@ -140,4 +141,4 @@ def audit_docker_compose(file_path: str) -> dict:
 if __name__ == "__main__":
     sample_file_path = "docker-compose.yaml"
     audit_results = audit_docker_compose(sample_file_path)
-    print(audit_results)
+    print(json.dumps(audit_results, indent=4))

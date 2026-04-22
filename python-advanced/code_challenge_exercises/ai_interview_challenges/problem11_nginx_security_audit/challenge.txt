@@ -2,7 +2,8 @@
 NGINX LOG ANALYSIS — ROUTING + SCANNER SUMMARY
 
 PURPOSE
-Write one function that reads a provided nginx access log file and returns a fixed summary dictionary.
+Write one function that reads a provided nginx access log 
+file and returns a fixed summary dictionary.
 
 This specification is intended to match the provided solution structure and behavior exactly.
 
@@ -46,7 +47,8 @@ Return exactly this structure:
     "average_bytes_sent_by_successful_get": None,
 }
 
-These six keys must always exist in the returned dictionary, even if the file is missing or all rows are invalid.
+These six keys must always exist in the returned dictionary, 
+even if the file is missing or all rows are invalid.
 
 ========================================================
 3) MEANING OF EACH RETURN FIELD
@@ -260,7 +262,6 @@ path = '/login?next=/dashboard'
 Take everything before it:
 normalized_path = '/login'
 
-Fixed explanation (clearer)
 - Look at the path string (not the full log line)
 - Check if the path contains a "?"
 - If it does:
@@ -362,7 +363,7 @@ C) Suspicious IP counting
 D) Successful GET tracking
 - Check whether method is exactly "GET" and status_code is exactly 200
 - If both conditions are true:
-    - Increment bytes_sent to successful_get_bytes_total
+    - Increment successful_get_bytes_total by bytes_sent
     - Increment successful_get_count by 1
 
 E) The closing except block to main file should be here

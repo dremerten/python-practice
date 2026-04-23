@@ -1,14 +1,19 @@
 
 
-def find_average(file_path: str) -> float:
-    with open(file_path, 'r') as file:
-        nums = [float(line.split()[1]) for line in file if line.strip()]
-        avg = round(sum(nums) / len(nums), 2)
+def avg_score(file_path: str) -> float:
     
-    with open("answer.txt", 'w') as file:
-        file.write(str(avg))
+    try:
+        with open(file_path, 'r') as file:
+            nums = [float(line.split()[1]) for line in file if line.strip()]
+            avg = sum(nums) / len(nums)
 
+        with open("answer.txt", 'w') as file:
+            file.write(str(f"{avg:.2f}"))
+            
+    except FileNotFoundError:
+        print(f"The file {file_path} can't be found or does not exist")
 
+    return avg
 
-result = find_average("scores.txt")
-print(result) # 5.20
+result = avg_score("scores.txt")
+print(f"The avg score is {result:.2f}")

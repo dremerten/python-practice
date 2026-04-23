@@ -159,10 +159,9 @@ A) Compute top_failed_pipeline
       using standard string comparison to results["top_failed_pipeline"]
 
 B) Compute frequent_failure_pipelines
-- Loop through each pipeline_name in pipeline_failure_counts
-- If the count for pipeline_name is greater than or equal to failure_threshold:
-    - copy that pipeline and its count into
-      results["frequent_failure_pipelines"]
+- Loop through each pipeline_name and count in pipeline_failure_counts.items()
+- If count is greater than or equal to failure_threshold:
+    - copy that pipeline_name and its count into results["frequent_failure_pipelines"]
 - Do not sort anything
 
 C) Compute busiest_minute

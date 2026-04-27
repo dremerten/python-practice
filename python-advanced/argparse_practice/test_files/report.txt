@@ -1,0 +1,10 @@
+Q1 Sales Report
+================
+Total revenue: $142,500
+Units sold: 320
+Top product: Widget Pro
+
+Notes:
+- Northeast region up 12% from last quarter
+- Returns down to 2.1%
+- Follow up with Chicago distributor

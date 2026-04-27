@@ -1,0 +1,12 @@
+INVOICE #1042
+Date: 2026-04-01
+Bill To: Acme Corp
+
+Item               Qty   Unit Price   Total
+-------------------------------------------
+Widget Pro          10      $49.99   $499.90
+Support Plan         1     $200.00   $200.00
+-------------------------------------------
+TOTAL                                $699.90
+
+Due by: 2026-05-01

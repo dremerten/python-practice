@@ -1,0 +1,22 @@
+You can add an alias when you connect the mariadb container essentially assigning it an additional DNS name
+
+The container mariadb is still reachable as:
+
+    mariadb
+
+But now it is also reachable as:
+
+    mysql
+
+docker network create wordpress_net
+docker network connect wordpress_net wordpress
+8ed04d8b7849887535b473f2fc095a4a4b82475e5e1484a5e1bf0d504539a051
+
+# add network alias
+docker network connect --alias mysql wordpress_net mariadb
+
+sudo docker exec wordpress mysqladmin -h mysql -u root -ppassword ping
+mysqld is alive
+
+root@i-0218fcb5829b220ae:~# bash /home/admin/agent/check.sh 
+OK
